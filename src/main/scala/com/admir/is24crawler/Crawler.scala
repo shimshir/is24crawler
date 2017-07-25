@@ -41,10 +41,10 @@ class Crawler(implicit materializer: Materializer, ec: ExecutionContext) extends
         browser.get(url)
       })
       .mapConcat(_ >> elementList("article.result-list-entry") >> attr("data-obid"))
-      .map(objId => {
+      .mapAsyncUnordered(16)(objId => {
         val url = s"$host/expose/$objId"
         log.info(s"Requesting detail page: $url")
-        (browser.get(url), objId)
+        Future((browser.get(url), objId))
       })
       .map { case (doc, objId) => (doc >> text("dd.is24qa-gesamtmiete"), s"$host/expose/$objId") }
       .map {

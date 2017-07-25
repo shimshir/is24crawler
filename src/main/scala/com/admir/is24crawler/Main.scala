@@ -7,6 +7,9 @@ import akka.actor.ActorSystem
 import akka.event.slf4j.SLF4JLogging
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import akka.stream.scaladsl.{Sink, Source}
+import com.admir.is24crawler.web.HttpServer
+import com.admir.is24crawler.web.routes.IndexRoute
+import com.typesafe.config.{Config, ConfigFactory}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
@@ -24,6 +27,11 @@ object Main extends App with SLF4JLogging {
   }
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(actorSystem).withSupervisionStrategy(decider))
   implicit val ec = actorSystem.dispatcher
+  val config: Config = ConfigFactory.load(s"application.conf")
+
+  val httpServer = new HttpServer(config)
+  val indexRoute = new IndexRoute()
+  httpServer.start(indexRoute.route)
 
   val df = new DecimalFormat()
   val sfs = new DecimalFormatSymbols

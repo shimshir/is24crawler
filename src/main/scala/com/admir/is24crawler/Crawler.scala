@@ -29,9 +29,9 @@ class Crawler(implicit materializer: Materializer, ec: ExecutionContext) {
     Source.single(browser.get(host + firstPagePath))
       .map(doc => Try((doc >> element("#pageSelection > select") >> elementList("option")) >> attr("value")).toOption)
       .collect { case Some(values) => values }.mapConcat(identity)
-      .mapAsync(10)(pagePath => Future(browser.get(host + pagePath)))
+      .map(pagePath => browser.get(host + pagePath))
       .mapConcat(_ >> elementList("article.result-list-entry") >> attr("data-obid"))
-      .mapAsync(100)(objId => Future((browser.get(s"$host/expose/$objId"), objId)))
+      .map(objId => (browser.get(s"$host/expose/$objId"), objId))
       .map { case (doc, objId) => (doc >> text("dd.is24qa-gesamtmiete"), s"$host/expose/$objId") }
       .map {
         case (priceStr, link) =>

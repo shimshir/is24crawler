@@ -24,7 +24,7 @@
         <#list exposes as expose>
         <tr>
             <td>${expose.priceStr()}</td>
-            <td><a href="${expose.link()}">${expose.link()}</a></td>
+            <td><a href="${expose.pageLink()}">${expose.pageLink()}</a></td>
         </tr>
         </#list>
         </tbody>

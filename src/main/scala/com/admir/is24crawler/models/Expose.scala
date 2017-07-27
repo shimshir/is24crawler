@@ -1,3 +1,8 @@
 package com.admir.is24crawler.models
 
-case class Expose(price: Double, priceStr: String, link: String)
+case class Expose(
+                   priceValue: Double,
+                   priceStr: String,
+                   pageLink: String,
+                   imageLinks: Seq[String]
+                 )

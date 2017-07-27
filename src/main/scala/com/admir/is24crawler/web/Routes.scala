@@ -10,15 +10,16 @@ import scala.collection.JavaConverters._
 class Routes(crawler: Crawler, freemarkerEngine: FreemarkerEngine) {
   def results: Route =
     get {
-      path("api" / "exposes") {
-        complete(StatusCodes.OK)
-      } ~ path("results") {
-        parameters(
-          'minSquares.as[Int],
-          'minRooms.as[Double],
-          'maxRent.as[Int]
-        ) { (sqMeters, rooms, rent) =>
-          onSuccess(crawler.search(rooms.toString.replace('.', ','), sqMeters, rent)) { results =>
+      parameters(
+        'minSquares.as[Int],
+        'minRooms.as[Double],
+        'maxRent.as[Int]
+      ) { (sqMeters, rooms, rent) =>
+        onSuccess(crawler.search(rooms.toString.replace('.', ','), sqMeters, rent)) { results =>
+          path("api" / "results") {
+            // TODO: return JSON
+            complete(StatusCodes.OK, results.toString)
+          } ~ path("results") {
             val out = freemarkerEngine.renderUri("results.ftl", Map("exposes" -> results.asJava))
             val entity = HttpEntity(ContentTypes.`text/html(UTF-8)`, out)
             complete(entity)

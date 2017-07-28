@@ -1,11 +1,12 @@
 package com.admir.is24crawler.services
 
 import akka.event.slf4j.SLF4JLogging
-import com.admir.is24crawler.models.Expose
+import com.admir.is24crawler.models.{Address, Expose, Price}
 import com.typesafe.config.Config
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
+import net.ruippeixotog.scalascraper.model.Document
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -51,18 +52,40 @@ class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionCon
     val pageLink = s"$host/expose/$exposeId"
 
     Future(browser.get(pageLink)).map { doc =>
-      val priceStr = doc >> text("dd.is24qa-gesamtmiete")
-      val priceNumStr = priceStr.substring(0, priceStr.indexOf("€")).trim.replace(".", "").replace(",", ".")
+      val price = extractPrice(doc)
+      val imageLinks = extractImageLinks(doc)
+      val address = extractAddress(doc)
+      Expose(price, pageLink, imageLinks, address)
+    }
+  }
 
-      val imageLinks = doc >> elementList("img.sp-image") >> attr("src")
+  private def extractPrice(exposePageDoc: Document): Price = {
+    val priceStr = exposePageDoc >> text("dd.is24qa-gesamtmiete")
+    val priceNumStr = priceStr.substring(0, priceStr.indexOf("€")).trim.replace(".", "").replace(",", ".")
 
-      Try(priceNumStr.toDouble) match {
-        case Success(priceValue) =>
-          Expose(priceValue, priceStr, pageLink, imageLinks)
-        case Failure(t) =>
-          log.error(s"Expose Id: $exposeId, priceStr: $priceStr, priceNumStr: $priceNumStr", t)
-          Expose(-1.0, priceStr + " (invalid)", pageLink, imageLinks)
-      }
+    Try(priceNumStr.toDouble) match {
+      case Success(priceValue) =>
+        Price(priceValue, priceStr)
+      case Failure(t) =>
+        log.error(s"Could not parse price for price: (str: $priceStr, strNum: $priceNumStr)", t)
+        Price(-1.0, priceStr + " (invalid)")
+    }
+  }
+
+  private def extractImageLinks(exposePageDoc: Document) = exposePageDoc >> elementList("img.sp-image") >> attr("data-src")
+
+  private def extractAddress(exposePageDoc: Document) = {
+    val addressElement = (exposePageDoc >> elementList("div.address-block")).head
+    val innerAddressContainer = addressElement >> element("div:nth-child(2)")
+    val spans = innerAddressContainer >> elementList("span")
+    spans.partition(spanElem => (spanElem >/~ validator(attr("class"))(_ contains "zip-region-and-country")).isRight) match {
+      case (regionElements, streetElements) =>
+        val regionText = regionElements.head >> text
+        val streetTextWithMap = streetElements.head >> text
+        val lastCommaIndex = streetTextWithMap.lastIndexOf(",")
+        val cutIndex = if (lastCommaIndex == -1) streetTextWithMap.length else lastCommaIndex
+        val streetText = streetTextWithMap.substring(0, cutIndex)
+        Address(regionText, streetText)
     }
   }
 }

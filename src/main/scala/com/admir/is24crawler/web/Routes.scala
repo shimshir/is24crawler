@@ -1,30 +1,27 @@
 package com.admir.is24crawler.web
 
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import com.admir.is24crawler.{Crawler, FreemarkerEngine}
+import com.admir.is24crawler.models.JsonProtocols._
+import com.admir.is24crawler.Crawler
 
-import scala.collection.JavaConverters._
 
-class Routes(crawler: Crawler, freemarkerEngine: FreemarkerEngine) {
+class Routes(crawler: Crawler) {
   def results: Route =
     get {
-      parameters(
-        'minSquares.as[Int],
-        'minRooms.as[Double],
-        'maxRent.as[Int]
-      ) { (sqMeters, rooms, rent) =>
-        onSuccess(crawler.search(rooms.toString.replace('.', ','), sqMeters, rent)) { results =>
-          path("api" / "results") {
-            // TODO: return JSON
-            complete(StatusCodes.OK, results.toString)
-          } ~ path("results") {
-            val out = freemarkerEngine.renderUri("results.ftl", Map("exposes" -> results.asJava))
-            val entity = HttpEntity(ContentTypes.`text/html(UTF-8)`, out)
-            complete(entity)
+      path("api" / "exposes") {
+        parameters(
+          'minSquares.as[Int],
+          'minRooms.as[Double],
+          'maxRent.as[Int]
+        ) { (sqMeters, rooms, rent) =>
+          onSuccess(crawler.search(rooms.toString.replace('.', ','), sqMeters, rent)) { results =>
+            complete(results)
           }
         }
+      } ~ path("results") {
+        complete(StatusCodes.Gone)
       }
     }
 }

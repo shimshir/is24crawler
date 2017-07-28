@@ -14,9 +14,9 @@ class Crawler(isService: IsService, browser: JsoupBrowser)(implicit materializer
   def search(minRooms: String, minSquares: Int, maxRent: Int): Future[Seq[Expose]] = {
     Source.fromFuture(isService.getResultPagePaths(minRooms, minSquares, maxRent)).mapConcat(identity)
       .mapAsync(1)(isService.getExposeIds).mapConcat(identity)
-      .mapAsync(16)(isService.createExpose).filter(_.priceValue <= maxRent)
+      .mapAsync(16)(isService.createExpose).filter(_.price.value <= maxRent)
       .fold[List[Expose]](Nil)(_ :+ _)
-      .mapConcat(_.sortBy(_.priceValue))
+      .mapConcat(_.sortBy(_.price.value))
       .runWith(Sink.seq)
   }
 }

@@ -7,6 +7,7 @@ import com.admir.is24crawler.services.IsService
 import com.admir.is24crawler.web.{HttpServer, Routes}
 import com.typesafe.config.{Config, ConfigFactory}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
+import akka.http.scaladsl.server.Directives._
 
 
 object Main extends App with SLF4JLogging {
@@ -25,5 +26,5 @@ object Main extends App with SLF4JLogging {
   val isService = new IsService(jsoupBrowser, config)
   val crawler = new Crawler(isService, jsoupBrowser)
   val routes = new Routes(crawler)
-  httpServer.start(routes.results)
+  httpServer.start(routes.exposes ~ routes.ui)
 }

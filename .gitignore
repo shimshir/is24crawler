@@ -1,2 +1,3 @@
 .idea/
 target/
+src/main/resources/is24crawler-ui/node_modules

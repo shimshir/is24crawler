@@ -17,17 +17,21 @@ class Routes(crawler: Crawler) extends SLF4JLogging {
   val tika = new Tika()
 
   def exposes: Route =
-    get {
-      path("api" / "exposes") {
-        parameters(
-          'minSquares.as[Int],
-          'minRooms.as[Double],
-          'maxRent.as[Int]
-        ) { (sqMeters, rooms, rent) =>
-          onSuccess(crawler.search(rooms.toString.replace('.', ','), sqMeters, rent)) { results =>
-            complete(results)
+    pathPrefix("api") {
+      path("exposes") {
+        get {
+          parameters(
+            'minSquares.as[Int],
+            'minRooms.as[Double],
+            'maxRent.as[Int]
+          ) { (sqMeters, rooms, rent) =>
+            onSuccess(crawler.search(rooms.toString.replace('.', ','), sqMeters, rent)) { results =>
+              complete(results)
+            }
           }
         }
+      } ~ extractUnmatchedPath { _ =>
+        complete(StatusCodes.NotFound, "This API endpoint does not exist")
       }
     }
 

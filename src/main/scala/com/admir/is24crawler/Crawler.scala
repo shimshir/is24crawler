@@ -9,7 +9,7 @@ import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 
 import scala.concurrent.Future
 
-class Crawler(isService: IsService, browser: JsoupBrowser)(implicit materializer: Materializer) extends SLF4JLogging {
+class Crawler(isService: IsService)(implicit materializer: Materializer) extends SLF4JLogging {
 
   def search(minRooms: String, minSquares: Int, maxRent: Int): Future[Seq[Expose]] = {
     Source.fromFuture(isService.getResultPagePaths(minRooms, minSquares, maxRent)).mapConcat(identity)

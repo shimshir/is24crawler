@@ -5,6 +5,12 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 package object models {
 
+  case class Search(
+                     maxTotalPrice: Double,
+                     minRooms: Double,
+                     minSquare: Int
+                   )
+
   case class Expose(
                      price: Price,
                      pageLink: String,
@@ -17,8 +23,11 @@ package object models {
   case class Address(region: String, street: String)
 
   object JsonProtocols extends SprayJsonSupport with DefaultJsonProtocol {
+    implicit val searchFormat: RootJsonFormat[Search] = jsonFormat3(Search)
+
     implicit val priceFormat: RootJsonFormat[Price] = jsonFormat2(Price)
     implicit val addressFormat: RootJsonFormat[Address] = jsonFormat2(Address)
     implicit val exposeFormat: RootJsonFormat[Expose] = jsonFormat4(Expose)
   }
+
 }

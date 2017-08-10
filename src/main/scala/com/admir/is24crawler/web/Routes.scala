@@ -8,6 +8,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import com.admir.is24crawler.models.JsonProtocols._
 import com.admir.is24crawler.Crawler
+import com.admir.is24crawler.models.Search
 import org.apache.tika.Tika
 
 import scala.util.control.NonFatal
@@ -19,19 +20,11 @@ class Routes(crawler: Crawler) extends SLF4JLogging {
   def exposes: Route =
     pathPrefix("api") {
       path("exposes") {
-        get {
-          parameters(
-            'minSquares.as[Int],
-            'minRooms.as[Double],
-            'maxRent.as[Int]
-          ) { (sqMeters, rooms, rent) =>
-            onSuccess(crawler.search(rooms.toString.replace('.', ','), sqMeters, rent)) { results =>
-              complete(results)
-            }
+        (post & entity(as[Search])) { search =>
+          onSuccess(crawler.search(search)) { exposes =>
+            complete(exposes)
           }
         }
-      } ~ extractUnmatchedPath { _ =>
-        complete(StatusCodes.NotFound, "This API endpoint does not exist")
       }
     }
 

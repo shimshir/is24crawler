@@ -24,7 +24,7 @@ object Main extends App with SLF4JLogging {
 
   val httpServer = new HttpServer(config)
   val isService = new IsService(jsoupBrowser, config)
-  val crawler = new Crawler(isService, jsoupBrowser)
+  val crawler = new Crawler(isService)
   val routes = new Routes(crawler)
   httpServer.start(routes.exposes ~ routes.ui)
 }

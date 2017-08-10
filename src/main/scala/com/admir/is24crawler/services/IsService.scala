@@ -1,7 +1,7 @@
 package com.admir.is24crawler.services
 
 import akka.event.slf4j.SLF4JLogging
-import com.admir.is24crawler.models.{Address, Expose, Price}
+import com.admir.is24crawler.models.{Address, Expose, Price, Search}
 import com.typesafe.config.Config
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL._
@@ -15,9 +15,13 @@ class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionCon
 
   val host: String = config.getString("application.is.host")
 
-  def getResultPagePaths(minRooms: String, minSquares: Int, maxRent: Int): Future[List[String]] = {
+  def getResultPagePaths(search: Search): Future[List[String]] = {
 
-    val firstResultPagePath = s"/Suche/S-T/Wohnung-Miete/Berlin/Berlin/-/$minRooms-/$minSquares,00-/EURO--$maxRent,00/-/-/false/true"
+    val minRooms = search.minRooms.toString.replace(".", ",")
+    val minSquares = search.minSquare
+    val maxRent = search.maxTotalPrice.toString.replace(".", ",")
+
+    val firstResultPagePath = s"/Suche/S-T/Wohnung-Miete/Berlin/Berlin/-/$minRooms-/$minSquares,00-/EURO--$maxRent/-/-/false/true"
 
     Future(browser.get(host + firstResultPagePath)).map { firstResultPageDoc =>
       val firstResultPageHasResults = (firstResultPageDoc >?> elementList("article.result-list-entry")).isDefined

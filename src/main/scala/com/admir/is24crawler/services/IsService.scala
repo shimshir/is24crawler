@@ -15,13 +15,18 @@ class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionCon
 
   val host: String = config.getString("application.is.host")
 
+  private def resultPagePath(pageNum: Int, minRooms: String, minSquares: Int, maxRent: String) =
+    s"/Suche/S-T/P-$pageNum/Wohnung-Miete/Berlin/Berlin/-/$minRooms-/$minSquares,00-/EURO--$maxRent/-/-/false/true"
+
   def getResultPagePaths(search: Search): Future[List[String]] = {
 
     val minRooms = search.minRooms.toString.replace(".", ",")
     val minSquares = search.minSquare
     val maxRent = search.maxTotalPrice.toString.replace(".", ",")
 
-    val firstResultPagePath = s"/Suche/S-T/Wohnung-Miete/Berlin/Berlin/-/$minRooms-/$minSquares,00-/EURO--$maxRent/-/-/false/true"
+    val resultPagePathForPageNum: Int => String = pageNum => resultPagePath(pageNum, minRooms, minSquares, maxRent)
+
+    val firstResultPagePath = resultPagePathForPageNum(1)
 
     Future(browser.get(host + firstResultPagePath)).map { firstResultPageDoc =>
       val firstResultPageHasResults = (firstResultPageDoc >?> elementList("article.result-list-entry")).isDefined
@@ -32,7 +37,8 @@ class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionCon
         case (true, None) =>
           List(firstResultPagePath)
         case (true, Some(selectElement)) =>
-          selectElement >> elementList("option") >> attr("value")
+          val lastPageNumber = (selectElement >> elementList("option") >> attr("value")).last.toInt
+          1 to lastPageNumber map resultPagePathForPageNum toList
         case _ =>
           log.error("Unexpected result after requesting first page")
           Nil

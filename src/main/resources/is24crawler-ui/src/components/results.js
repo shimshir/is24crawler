@@ -1,15 +1,36 @@
 import React from 'react'
-import {Component, Link} from 'jumpsuit'
+import {Component, State} from 'jumpsuit'
 
-export default Component(
+const ResultsState = State(
+    {
+        initial: {
+            exposes: []
+        },
+        setExposes(state, exposes) {
+            console.log(exposes);
+            return {exposes};
+        }
+    }
+);
+
+const Results = Component(
     {
         render() {
             return (
                 <div>
                     Results
-                    <Link to="/search">Search</Link>
+                    <ul>
+                        {
+                            this.props.exposes.map(
+                                (expose, index) =>
+                                    <li key={index}>{expose.price.string};{expose.address.region}</li>
+                            )
+                        }
+                    </ul>
                 </div>
             )
         }
-    }
+    }, (state) => state.results
 );
+
+export {Results, ResultsState};

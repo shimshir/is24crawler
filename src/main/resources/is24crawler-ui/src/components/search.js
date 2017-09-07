@@ -28,7 +28,7 @@ const SearchState = State(
 
 Effect('submitSearch', (search) => {
     console.log(search);
-    httpClient.post('/api/exposes', search).then(res => console.log(res.data))
+    httpClient.post('/api/exposes', search).then(res => Actions.setExposes(res.data))
 });
 
 const Search = Component(
@@ -45,24 +45,27 @@ const Search = Component(
         render() {
             return (
                 <div>
-                    <form>
-                        <FormGroup controlId="mainControl">
-                            <ControlLabel>Max. total price</ControlLabel>
+                    <form onSubmit={e => e.preventDefault()}>
+                        <FormGroup>
+                            <ControlLabel htmlFor="maxTotalPriceInput">Max. total price</ControlLabel>
                             <FormControl
+                                id="maxTotalPriceInput"
                                 type="text"
                                 value={this.props.maxTotalPrice}
                                 placeholder="Enter price in €"
                                 onChange={event => Actions.setMaxTotalPrice(event.target.value)}
                             />
-                            <ControlLabel>Min. rooms</ControlLabel>
+                            <ControlLabel htmlFor="minRoomsInput">Min. rooms</ControlLabel>
                             <FormControl
+                                id="minRoomsInput"
                                 type="text"
                                 value={this.props.minRooms}
                                 placeholder="Enter the amount of rooms"
                                 onChange={event => Actions.setMinRooms(event.target.value)}
                             />
-                            <ControlLabel>Min. square meters</ControlLabel>
+                            <ControlLabel htmlFor="minSquareInput">Min. square meters</ControlLabel>
                             <FormControl
+                                id="minSquareInput"
                                 type="text"
                                 value={this.props.minSquare}
                                 placeholder="Enter the square meters"
@@ -70,7 +73,7 @@ const Search = Component(
                             />
                         </FormGroup>
                         <Button
-                            type="button"
+                            type="submit"
                             onClick={this.submitForm}>
                             Submit
                         </Button>

@@ -11,8 +11,11 @@ import scala.concurrent.Future
 class Crawler(isService: IsService)(implicit materializer: Materializer) extends SLF4JLogging {
 
   def search(search: Search): Future[Seq[Expose]] = {
-    Source.fromFuture(isService.getResultPagePaths(search)).mapConcat(identity)
-      .mapAsync(1)(isService.getExposeIds).mapConcat(identity)
+    Source.fromFuture(isService.getResultPagePaths(search)).mapConcat(identity).map { rpPath =>
+      log.debug(rpPath)
+      rpPath
+    }
+      .mapAsync(2)(isService.getExposeIds).mapConcat(identity)
       .mapAsync(16)(isService.createExpose).filter(_.price.value <= search.maxTotalPrice)
       .fold[List[Expose]](Nil)(_ :+ _)
       .mapConcat(_.sortBy(_.price.value))

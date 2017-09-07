@@ -2,8 +2,7 @@ import React from 'react'
 import {Router, Route, Component} from 'jumpsuit'
 import 'bootstrap/dist/css/bootstrap.css'
 
-import {Search} from './search'
-import Results from './results'
+import Start from './start'
 
 export default Component(
     {
@@ -11,8 +10,7 @@ export default Component(
             return (
                 <div className="container">
                     <Router>
-                        <Route path="/" component={Search}/>
-                        <Route path="/results" component={Results}/>
+                        <Route path="/" component={Start}/>
                         <Route path="*" component={() => <h1>404 Not Found</h1>}/>
                     </Router>
                 </div>

@@ -12,6 +12,7 @@ import com.admir.is24crawler.models.Search
 import org.apache.tika.Tika
 
 import scala.util.control.NonFatal
+import spray.json._
 
 class Routes(crawler: Crawler) extends SLF4JLogging {
 
@@ -21,7 +22,9 @@ class Routes(crawler: Crawler) extends SLF4JLogging {
     pathPrefix("api") {
       path("exposes") {
         (post & entity(as[Search])) { search =>
+          log.info(s"Received search input:\n${search.toJson.prettyPrint}")
           onSuccess(crawler.search(search)) { exposes =>
+            log.info(s"Completing request with ${exposes.size} expose results")
             complete(exposes)
           }
         }

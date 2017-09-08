@@ -10,9 +10,11 @@ export default Component(
                 <div>
                     <h1 style={{textAlign: "center"}}>is24crawler</h1>
                     <Search/>
-                    <Results/>
+                    {this.props.searchingStatus === 'RECEIVED_RESULTS' ? <Results/> : null}
                 </div>
             )
         }
+    }, state => {
+        return {searchingStatus: state.search.searchingStatus}
     }
 );

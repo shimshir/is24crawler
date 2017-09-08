@@ -14,7 +14,7 @@ const SearchState = State(
             maxTotalPrice: '600',
             minRooms: '1.5',
             minSquare: '50',
-            searchingStatus: false
+            searchingStatus: 'NOT_SEARCHING'
         },
         setMaxTotalPrice(state, maxTotalPrice) {
             return maxTotalPrice === '' || isPositiveNumeric(maxTotalPrice) ? {...state, maxTotalPrice} : state;
@@ -32,11 +32,17 @@ const SearchState = State(
 );
 
 Effect('submitSearch', (search) => {
-    Actions.setSearchingStatus(true);
+    Actions.setSearchingStatus('SEARCHING');
     httpClient.post('/api/exposes', search).then(res => {
         Actions.setExposes(res.data);
-        Actions.setSearchingStatus(false);
-    })
+        Actions.setSearchingStatus('RECEIVED_RESULTS');
+    }).catch(error => {
+        if (error.response && error.response.status === 503) {
+            Actions.setSearchingStatus('ERROR_SERVICE_UNAVAILABLE');
+        } else {
+            Actions.setSearchingStatus('ERROR');
+        }
+    });
 });
 
 const Search = Component(
@@ -85,9 +91,11 @@ const Search = Component(
                             onClick={this.submitForm}>
                             Submit
                         </Button>
-                        {
-                            this.props.searchingStatus ? <img src={loadingImage} alt="Searching for exposes" style={{margin: "0 5px"}}/> : null
-                        }
+                        <span style={{margin: "0 5px"}}>
+                            {this.props.searchingStatus === 'SEARCHING' ? <img src={loadingImage} alt="Searching for exposes"/> : null}
+                            {this.props.searchingStatus === 'ERROR_SERVICE_UNAVAILABLE' ? <span>Search service did not respond in time</span> : null}
+                            {this.props.searchingStatus === 'ERROR' ? <span>Unknown error occurred</span> : null}
+                        </span>
                     </form>
                 </div>
             )

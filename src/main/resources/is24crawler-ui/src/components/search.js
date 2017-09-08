@@ -2,6 +2,7 @@ import React from 'react'
 import {Component, State, Actions, Effect} from 'jumpsuit'
 import {FormGroup, ControlLabel, FormControl, Button} from 'react-bootstrap'
 import httpClient from '../httpClient'
+import loadingImage from '../img/rotating-ring-loader.svg';
 
 const isPositiveNumeric = (n) => {
     return !isNaN(parseFloat(n)) && isFinite(n) && parseFloat(n) >= 0;
@@ -10,9 +11,10 @@ const isPositiveNumeric = (n) => {
 const SearchState = State(
     {
         initial: {
-            maxTotalPrice: '',
-            minRooms: '',
-            minSquare: ''
+            maxTotalPrice: '600',
+            minRooms: '1.5',
+            minSquare: '50',
+            searchingStatus: false
         },
         setMaxTotalPrice(state, maxTotalPrice) {
             return maxTotalPrice === '' || isPositiveNumeric(maxTotalPrice) ? {...state, maxTotalPrice} : state;
@@ -22,13 +24,19 @@ const SearchState = State(
         },
         setMinSquare(state, minSquare) {
             return minSquare === '' || (isPositiveNumeric(minSquare) && Number.isInteger(parseFloat(minSquare))) ? {...state, minSquare} : state;
+        },
+        setSearchingStatus(state, searchingStatus) {
+            return {...state, searchingStatus};
         }
     }
 );
 
 Effect('submitSearch', (search) => {
-    console.log(search);
-    httpClient.post('/api/exposes', search).then(res => Actions.setExposes(res.data))
+    Actions.setSearchingStatus(true);
+    httpClient.post('/api/exposes', search).then(res => {
+        Actions.setExposes(res.data);
+        Actions.setSearchingStatus(false);
+    })
 });
 
 const Search = Component(
@@ -77,6 +85,9 @@ const Search = Component(
                             onClick={this.submitForm}>
                             Submit
                         </Button>
+                        {
+                            this.props.searchingStatus ? <img src={loadingImage} alt="Searching for exposes" style={{margin: "0 5px"}}/> : null
+                        }
                     </form>
                 </div>
             )

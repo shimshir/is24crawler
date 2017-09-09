@@ -12,6 +12,15 @@ const ResultsState = State(
     }
 );
 
+const addressToGoogleMapLink = address => {
+    const regionEnc = address.region.trim().split(' ').join('+');
+    const realRegionCommaIndex = regionEnc.indexOf(',');
+    const regionCommaIndex = realRegionCommaIndex !== -1 ? realRegionCommaIndex : regionEnc.length;
+    const regionEncTrimmed = regionEnc.substring(0, regionCommaIndex);
+    const streetEnc = address.street.trim().split(' ').join('+');
+    return `https://www.google.de/maps/place/${streetEnc},+${regionEncTrimmed}`;
+};
+
 const Results = Component(
     {
         render() {
@@ -24,10 +33,12 @@ const Results = Component(
                     return (
                         <div>
                             <br/>
-                            <Table responsive bordered hover>
+                            <Table responsive hover>
                                 <thead>
                                 <tr>
                                     <th>Price</th>
+                                    <th>Rooms</th>
+                                    <th>m<sup>2</sup></th>
                                     <th>Address</th>
                                     <th>Link</th>
                                 </tr>
@@ -38,7 +49,13 @@ const Results = Component(
                                         (expose, index) =>
                                             <tr key={index}>
                                                 <td>{expose.price.string}</td>
-                                                <td>{expose.address.region}, {expose.address.street}</td>
+                                                <td>{expose.roomAmount}</td>
+                                                <td>{Math.round(expose.surface * 100) / 100}</td>
+                                                <td>
+                                                    <a href={addressToGoogleMapLink(expose.address)}>
+                                                        {expose.address.region}, {expose.address.street}
+                                                        </a>
+                                                </td>
                                                 <td><a href={expose.pageLink}>View</a></td>
                                             </tr>
                                     )

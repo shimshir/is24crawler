@@ -13,6 +13,8 @@ package object models {
 
   case class Expose(
                      price: Price,
+                     surface: Float,
+                     roomAmount: Float,
                      pageLink: String,
                      imageLinks: Seq[String],
                      address: Address
@@ -27,7 +29,7 @@ package object models {
 
     implicit val priceFormat: RootJsonFormat[Price] = jsonFormat2(Price)
     implicit val addressFormat: RootJsonFormat[Address] = jsonFormat2(Address)
-    implicit val exposeFormat: RootJsonFormat[Expose] = jsonFormat4(Expose)
+    implicit val exposeFormat: RootJsonFormat[Expose] = jsonFormat6(Expose)
   }
 
 }

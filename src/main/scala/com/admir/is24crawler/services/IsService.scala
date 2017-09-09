@@ -63,9 +63,11 @@ class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionCon
 
     Future(browser.get(pageLink)).map { doc =>
       val price = extractPrice(doc)
+      val surface = extractSurface(doc)
+      val roomAmount = extractRoomAmount(doc)
       val imageLinks = extractImageLinks(doc)
       val address = extractAddress(doc)
-      Expose(price, pageLink, imageLinks, address)
+      Expose(price, surface, roomAmount, pageLink, imageLinks, address)
     }
   }
 
@@ -81,6 +83,18 @@ class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionCon
         Price(-1.0, priceStr + " (invalid)")
     }
   }
+
+  private def extractSurface(exposePageDoc: Document): Float = {
+    val surfaceString = exposePageDoc >> text("div.is24qa-flaeche")
+    surfaceString.filter(isValidNumberSymbol).replace(',', '.').toFloat
+  }
+
+  private def extractRoomAmount(exposePageDoc: Document): Float = {
+    val roomAmountString = exposePageDoc >> text("div.is24qa-zi")
+    roomAmountString.filter(isValidNumberSymbol).replace(',', '.').toFloat
+  }
+
+  private def isValidNumberSymbol(symbol: Char) = symbol.isDigit || symbol == ',' || symbol == '.' || symbol == '-'
 
   private def extractImageLinks(exposePageDoc: Document) = exposePageDoc >> elementList("img.sp-image") >> attr("data-src")
 

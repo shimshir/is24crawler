@@ -18,7 +18,13 @@ const addressToGoogleMapLink = address => {
     const regionCommaIndex = realRegionCommaIndex !== -1 ? realRegionCommaIndex : regionEnc.length;
     const regionEncTrimmed = regionEnc.substring(0, regionCommaIndex);
     const streetEnc = address.street.trim().split(' ').join('+');
-    return `https://www.google.de/maps/place/${streetEnc},+${regionEncTrimmed}`;
+    // TODO: Move this to the backend
+    if (address.street === "Die vollständige Adresse der Immobilie erhalten Sie vom Anbieter.") {
+        return `https://www.google.de/maps/place/${regionEncTrimmed}`;
+    } else {
+        return `https://www.google.de/maps/place/${streetEnc},+${regionEncTrimmed}`;
+    }
+
 };
 
 const Results = Component(

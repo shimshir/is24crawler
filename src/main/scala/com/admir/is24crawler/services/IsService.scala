@@ -44,6 +44,7 @@ class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionCon
           List(firstResultPagePath)
         case (true, Some(selectElement)) =>
           val lastPageNumber = (selectElement >> elementList("option") >> attr("value")).last.toInt
+          log.info(s"Found total of $lastPageNumber result pages")
           1 to lastPageNumber map resultPagePathForPageNum toList
         case _ =>
           log.error("Unexpected result after requesting first page")

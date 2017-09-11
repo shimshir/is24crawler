@@ -1,4 +1,4 @@
-package com.admir.is24crawler.web
+package com.admir.is24crawler.web.routes
 
 import java.io.BufferedInputStream
 
@@ -6,32 +6,15 @@ import akka.event.slf4j.SLF4JLogging
 import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpEntity, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import com.admir.is24crawler.models.JsonProtocols._
-import com.admir.is24crawler.Crawler
-import com.admir.is24crawler.models.Search
 import org.apache.tika.Tika
 
 import scala.util.control.NonFatal
-import spray.json._
 
-class Routes(crawler: Crawler) extends SLF4JLogging {
 
+class UiRoute extends SLF4JLogging {
   val tika = new Tika()
 
-  def exposes: Route =
-    pathPrefix("api") {
-      path("exposes") {
-        (post & entity(as[Search])) { search =>
-          log.info(s"Received search input:\n${search.toJson.prettyPrint}")
-          onSuccess(crawler.search(search)) { exposes =>
-            log.info(s"Completing request with ${exposes.size} expose results")
-            complete(exposes)
-          }
-        }
-      }
-    }
-
-  def ui: Route =
+  def route: Route =
     get {
       pathEndOrSingleSlash {
         completeWithUiResource("index.html", ContentTypes.`text/html(UTF-8)`)
@@ -55,7 +38,7 @@ class Routes(crawler: Crawler) extends SLF4JLogging {
       }
     }
 
-  def completeWithUiResource(path: String, contentType: ContentType): Route = {
+  private def completeWithUiResource(path: String, contentType: ContentType): Route = {
     val innerPath = s"/is24crawler-ui/build/$path"
     readResource(innerPath) match {
       case Left(t) =>
@@ -66,7 +49,7 @@ class Routes(crawler: Crawler) extends SLF4JLogging {
     }
   }
 
-  def readResource(classpath: String): Either[Throwable, Array[Byte]] = {
+  private def readResource(classpath: String): Either[Throwable, Array[Byte]] = {
     val bis = new BufferedInputStream(getClass.getResourceAsStream(classpath))
     try Right(Stream.continually(bis.read).takeWhile(_ != -1).map(_.toByte).toArray)
     catch {

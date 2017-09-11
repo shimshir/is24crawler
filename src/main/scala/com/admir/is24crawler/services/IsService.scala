@@ -8,17 +8,23 @@ import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.model.Document
 
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionContext) extends SLF4JLogging {
+import scala.language.postfixOps
+
+import scalacache._
+import memoization._
+
+class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionContext, scalaCache: ScalaCache[NoSerialization]) extends SLF4JLogging {
 
   val host: String = config.getString("application.is.host")
 
   private def resultPagePath(pageNum: Int, minRooms: String, minSquares: Int, maxRent: String) =
     s"/Suche/S-T/P-$pageNum/Wohnung-Miete/Berlin/Berlin/-/$minRooms-/$minSquares,00-/EURO--$maxRent/-/-/false/true"
 
-  def getResultPagePaths(search: Search): Future[List[String]] = {
+  def getResultPagePaths(search: Search): Future[List[String]] = memoize(1 hour) {
 
     val minRooms = search.minRooms.toString.replace(".", ",")
     val minSquares = search.minSquare
@@ -46,7 +52,7 @@ class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionCon
     }
   }
 
-  def getExposeIds(resultPagePath: String): Future[List[String]] =
+  def getExposeIds(resultPagePath: String): Future[List[String]] = memoize(1 hour) {
     Future(browser.get(host + resultPagePath)).map { resultPageDoc =>
       Try(resultPageDoc >> elementList("article.result-list-entry") >> attr("data-obid")) match {
         case Failure(t) =>
@@ -56,8 +62,9 @@ class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionCon
           exposeIds
       }
     }
+  }
 
-  def createExpose(exposeId: String): Future[Expose] = {
+  def createExpose(exposeId: String): Future[Expose] = memoize(1 day) {
 
     val pageLink = s"$host/expose/$exposeId"
 

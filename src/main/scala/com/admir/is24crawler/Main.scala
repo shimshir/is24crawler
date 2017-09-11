@@ -9,6 +9,9 @@ import com.typesafe.config.{Config, ConfigFactory}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import akka.http.scaladsl.server.Directives._
 
+import scalacache._
+import guava._
+
 
 object Main extends App with SLF4JLogging {
   implicit val actorSystem = ActorSystem("is24crawler")
@@ -18,11 +21,14 @@ object Main extends App with SLF4JLogging {
   }
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(actorSystem).withSupervisionStrategy(decider))
   implicit val ec = actorSystem.dispatcher
+  implicit val scalaCache = ScalaCache(GuavaCache())
+
   val config: Config = ConfigFactory.load(s"application.conf")
 
   val jsoupBrowser = JsoupBrowser.typed()
 
   val httpServer = new HttpServer(config)
+
   val isService = new IsService(jsoupBrowser, config)
   val crawler = new Crawler(isService)
   val routes = new Routes(crawler)

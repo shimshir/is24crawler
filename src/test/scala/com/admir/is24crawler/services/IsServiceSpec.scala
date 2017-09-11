@@ -12,7 +12,13 @@ import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 
+import scalacache._
+import guava._
+
 class IsServiceSpec extends FlatSpec with Matchers with MockitoSugar {
+
+  implicit val scalaCache = ScalaCache(GuavaCache())
+
   "getExposeIds" should "extract expose Ids from a result page" in {
     val resultPageHtml =
       """
@@ -28,6 +34,7 @@ class IsServiceSpec extends FlatSpec with Matchers with MockitoSugar {
     val mockJsoupBrowser = mock[JsoupBrowser]
     when(mockJsoupBrowser.get(anyString())) thenReturn JsoupBrowser().parseString(resultPageHtml).asInstanceOf[JsoupDocument]
     val mockConfig = mock[Config]
+
     val isService = new IsService(mockJsoupBrowser, mockConfig)
     val exposeIds = Await.result(isService.getExposeIds(""), 1.second)
     exposeIds should contain only("1", "2", "3")

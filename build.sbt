@@ -13,6 +13,8 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   "net.ruippeixotog" %% "scala-scraper" % "2.0.0",
   "org.apache.tika" % "tika-core" % "1.16",
+  "com.github.cb372" %% "scalacache-core" % "0.9.4",
+  "com.github.cb372" %% "scalacache-guava" % "0.9.4",
 
   "org.scalatest" %% "scalatest" % "3.2.0-SNAP9" % "test",
   "org.mockito" % "mockito-core" % "2.8.47" % "test"

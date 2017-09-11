@@ -34,6 +34,7 @@ class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionCon
 
     val firstResultPagePath = resultPagePathForPageNum(1)
 
+    log.info("Fetching first result page")
     Future(browser.get(host + firstResultPagePath)).map { firstResultPageDoc =>
       val firstResultPageHasResults = (firstResultPageDoc >?> elementList("article.result-list-entry")).isDefined
       val selectElementOpt = firstResultPageDoc >?> element("#pageSelection > select")
@@ -54,6 +55,7 @@ class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionCon
   }
 
   def getExposeIds(resultPagePath: String): Future[List[String]] = memoize(1 hour) {
+    log.debug(s"Fetching exposes from result page: $resultPagePath")
     Future(browser.get(host + resultPagePath)).map { resultPageDoc =>
       Try(resultPageDoc >> elementList("article.result-list-entry") >> attr("data-obid")) match {
         case Failure(t) =>
@@ -66,9 +68,8 @@ class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionCon
   }
 
   def createExpose(exposeId: String): Future[Expose] = memoize(1 day) {
-
     val pageLink = s"$host/expose/$exposeId"
-
+    log.debug(s"Fetching expose page for id: $exposeId")
     Future(browser.get(pageLink)).map { doc =>
       val price = extractPrice(doc)
       val surface = extractSurface(doc)

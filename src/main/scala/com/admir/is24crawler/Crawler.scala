@@ -15,7 +15,7 @@ class Crawler(isService: IsService)(implicit materializer: Materializer) extends
       log.debug(rpPath)
       rpPath
     }
-      .mapAsync(2)(isService.getExposeIds).mapConcat(identity)
+      .mapAsync(4)(isService.getExposeIds).mapConcat(identity)
       .mapAsync(16)(isService.createExpose).filter(_.price.value <= search.maxTotalPrice)
       .fold[List[Expose]](Nil)(_ :+ _)
       .mapConcat(_.sortBy(_.price.value))

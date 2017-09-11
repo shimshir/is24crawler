@@ -17,8 +17,7 @@ class Crawler(isService: IsService)(implicit materializer: Materializer) extends
     }
       .mapAsync(4)(isService.getExposeIds).mapConcat(identity)
       .mapAsync(16)(isService.createExpose).filter(_.price.value <= search.maxTotalPrice)
-      .fold[List[Expose]](Nil)(_ :+ _)
-      .mapConcat(_.sortBy(_.price.value))
       .runWith(Sink.seq)
+      .map(_.sortBy(_.price.value))
   }
 }

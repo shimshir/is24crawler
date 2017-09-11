@@ -35,15 +35,23 @@ class Routes(crawler: Crawler) extends SLF4JLogging {
     get {
       pathEndOrSingleSlash {
         completeWithUiResource("index.html", ContentTypes.`text/html(UTF-8)`)
-      } ~ path(RemainingPath) { path =>
-        val mime = tika.detect(path.toString)
-        ContentType.parse(mime) match {
-          case Left(errorInfos) =>
-            log.error(s"Errors while parsing mime: $mime, errors: $errorInfos")
-            complete(StatusCodes.InternalServerError)
-          case Right(contentType) =>
-            completeWithUiResource(path.toString, contentType)
+      } ~ pathPrefix("static") {
+        pathEndOrSingleSlash {
+          complete(StatusCodes.NotFound)
+        } ~ extractUnmatchedPath { path =>
+          val mime = tika.detect(path.toString)
+          ContentType.parse(mime) match {
+            case Left(errorInfos) =>
+              log.error(s"Errors while parsing mime: $mime, errors: $errorInfos")
+              complete(StatusCodes.InternalServerError)
+            case Right(ContentTypes.`application/octet-stream`) =>
+              complete(StatusCodes.NotFound)
+            case Right(contentType) =>
+              completeWithUiResource(s"static${path.toString}", contentType)
+          }
         }
+      } ~ extractUnmatchedPath { _ =>
+        completeWithUiResource("index.html", ContentTypes.`text/html(UTF-8)`)
       }
     }
 
@@ -51,10 +59,8 @@ class Routes(crawler: Crawler) extends SLF4JLogging {
     val innerPath = s"/is24crawler-ui/build/$path"
     readResource(innerPath) match {
       case Left(t) =>
-        log.warn(s"Could not read resource: $innerPath, returning index.html")
         log.trace(s"Could not read resource: $innerPath", t)
-        // TODO: Differentiate between /static and other paths
-        completeWithUiResource("index.html", ContentTypes.`text/html(UTF-8)`)
+        complete(StatusCodes.NotFound)
       case Right(resource) =>
         complete(HttpEntity(contentType, resource))
     }

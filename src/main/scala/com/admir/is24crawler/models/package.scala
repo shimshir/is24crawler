@@ -5,11 +5,11 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 package object models {
 
-  case class Search(
-                     maxTotalPrice: Double,
-                     minRooms: Double,
-                     minSquare: Int
-                   )
+  case class CrawlerSearchFilter(
+                                  maxTotalPrice: Double,
+                                  minRooms: Double,
+                                  minSquare: Int
+                                )
 
   case class Expose(
                      price: Price,
@@ -24,8 +24,16 @@ package object models {
 
   case class Address(region: String, street: String)
 
+  case class ResultPageLocation(first: String) {
+    def withPageNum(num: Int): String = {
+      first.splitAt(10) match {
+        case (prefix, suffix) => s"$prefix/P-$num$suffix"
+      }
+    }
+  }
+
   object JsonProtocols extends SprayJsonSupport with DefaultJsonProtocol {
-    implicit val searchFormat: RootJsonFormat[Search] = jsonFormat3(Search)
+    implicit val crawlerSearchFormat: RootJsonFormat[CrawlerSearchFilter] = jsonFormat3(CrawlerSearchFilter)
 
     implicit val priceFormat: RootJsonFormat[Price] = jsonFormat2(Price)
     implicit val addressFormat: RootJsonFormat[Address] = jsonFormat2(Address)

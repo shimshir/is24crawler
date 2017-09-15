@@ -1,7 +1,7 @@
 package com.admir.is24crawler.services
 
 import akka.event.slf4j.SLF4JLogging
-import com.admir.is24crawler.models.{Address, Expose, Price, Search}
+import com.admir.is24crawler.models.{Address, Expose, Price, CrawlerSearchFilter}
 import com.typesafe.config.Config
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL._
@@ -24,7 +24,7 @@ class IsService(browser: JsoupBrowser, config: Config)(implicit ec: ExecutionCon
   private def resultPagePath(pageNum: Int, minRooms: String, minSquares: Int, maxRent: String) =
     s"/Suche/S-T/P-$pageNum/Wohnung-Miete/Berlin/Berlin/-/$minRooms-/$minSquares,00-/EURO--$maxRent/-/-/false/true"
 
-  def getResultPagePaths(search: Search): Future[List[String]] = memoize(1 hour) {
+  def getResultPagePaths(search: CrawlerSearchFilter): Future[List[String]] = memoize(1 hour) {
 
     val minRooms = search.minRooms.toString.replace(".", ",")
     val minSquares = search.minSquare

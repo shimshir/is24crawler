@@ -2,3 +2,7 @@
     cursor: pointer;
     user-select: none;
 }
+
+.sortable i {
+    float: right;
+}

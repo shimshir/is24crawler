@@ -69,10 +69,21 @@ const addressToGoogleMapLink = address => {
 
 };
 
+const getSortingClassName = (field, ordering) => {
+    return ordering.field !== field ? 'fa-sort' : ordering.direction === 'ASC' ? 'fa-sort-asc' : 'fa-sort-desc'
+};
+
 const Results = Component(
     {
         render() {
             const exposes = this.props.exposes;
+            const ordering = this.props.ordering;
+            const sortingClassNames = {
+                price: getSortingClassName('price.value', ordering),
+                rooms: getSortingClassName('roomAmount', ordering),
+                surface: getSortingClassName('surface', ordering),
+                address: getSortingClassName('address.region', ordering)
+            };
             if (exposes) {
                 if (exposes.length === 0) {
                     return (<div>No results found</div>);
@@ -83,10 +94,22 @@ const Results = Component(
                             <Table responsive hover>
                                 <thead>
                                 <tr>
-                                    <th className="sortable" onClick={e => Actions.sortExposes('price.value')}>Price</th>
-                                    <th className="sortable" onClick={e => Actions.sortExposes('roomAmount')}>Rooms</th>
-                                    <th className="sortable" onClick={e => Actions.sortExposes('surface')}>m<sup>2</sup></th>
-                                    <th className="sortable" onClick={e => Actions.sortExposes('address.region')}>Address</th>
+                                    <th className="sortable" onClick={e => Actions.sortExposes('price.value')}>
+                                        Price
+                                        <i className={`fa fa-fw ${sortingClassNames.price}`}/>
+                                    </th>
+                                    <th className="sortable" onClick={e => Actions.sortExposes('roomAmount')}>
+                                        Rooms
+                                        <i className={`fa fa-fw ${sortingClassNames.rooms}`}/>
+                                    </th>
+                                    <th className="sortable" onClick={e => Actions.sortExposes('surface')}>
+                                        m<sup>2</sup>
+                                        <i className={`fa fa-fw ${sortingClassNames.surface}`}/>
+                                    </th>
+                                    <th className="sortable" onClick={e => Actions.sortExposes('address.region')}>
+                                        Address
+                                        <i className={`fa fa-fw ${sortingClassNames.address}`}/>
+                                    </th>
                                     <th>Link</th>
                                 </tr>
                                 </thead>

@@ -8,6 +8,10 @@ class HttpClient {
         this.host = host;
     }
 
+    get(path) {
+        return axios.get(this.host + path);
+    }
+
     post(path, data) {
         return axios.post(this.host + path, data);
     }

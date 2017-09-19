@@ -3,12 +3,13 @@ package com.admir.is24crawler
 import akka.actor.ActorSystem
 import akka.event.slf4j.SLF4JLogging
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
-import com.admir.is24crawler.services.IsService
+import com.admir.is24crawler.services.Is24Service
 import com.admir.is24crawler.web.HttpServer
 import com.typesafe.config.{Config, ConfigFactory}
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import akka.http.scaladsl.server.Directives._
 import com.admir.is24crawler.web.routes.{ApiRoute, UiRoute}
+import com.admir.is24crawler.web.HttpClient
 
 import scalacache._
 import guava._
@@ -30,7 +31,8 @@ object Main extends App with SLF4JLogging {
 
   val httpServer = new HttpServer(config)
 
-  val isService = new IsService(jsoupBrowser, config)
+  val httpClient = new HttpClient()
+  val isService = new Is24Service(httpClient, jsoupBrowser, config)
   val crawler = new Crawler(isService)
   val apiRoute = new ApiRoute(crawler)
   val uiRoute = new UiRoute()

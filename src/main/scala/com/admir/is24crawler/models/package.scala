@@ -8,7 +8,8 @@ package object models {
   case class CrawlerSearchFilter(
                                   maxTotalPrice: Double,
                                   minRooms: Double,
-                                  minSquare: Int
+                                  minSquare: Double,
+                                  locationNodes: Seq[Long]
                                 )
 
   case class Expose(
@@ -24,7 +25,7 @@ package object models {
 
   case class Address(region: String, street: String)
 
-  case class ResultPageLocation(first: String) {
+  case class ResultPagePath(first: String) {
     def withPageNum(num: Int): String = {
       first.splitAt(10) match {
         case (prefix, suffix) => s"$prefix/P-$num$suffix"
@@ -33,7 +34,7 @@ package object models {
   }
 
   object JsonProtocols extends SprayJsonSupport with DefaultJsonProtocol {
-    implicit val crawlerSearchFormat: RootJsonFormat[CrawlerSearchFilter] = jsonFormat3(CrawlerSearchFilter)
+    implicit val crawlerSearchFormat: RootJsonFormat[CrawlerSearchFilter] = jsonFormat4(CrawlerSearchFilter)
 
     implicit val priceFormat: RootJsonFormat[Price] = jsonFormat2(Price)
     implicit val addressFormat: RootJsonFormat[Address] = jsonFormat2(Address)

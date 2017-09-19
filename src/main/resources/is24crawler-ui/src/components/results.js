@@ -2,21 +2,7 @@ import React from 'react'
 import {Component, State, Actions} from 'jumpsuit'
 import {Table} from 'react-bootstrap'
 import '../css/results.css'
-
-const deepFind = (obj, path) => {
-    let paths = path.split('.')
-        , current = obj
-        , i;
-
-    for (i = 0; i < paths.length; ++i) {
-        if (!current[paths[i]]) {
-            return undefined;
-        } else {
-            current = current[paths[i]];
-        }
-    }
-    return current;
-};
+import Utils from '../utils'
 
 const ResultsState = State(
     {
@@ -28,7 +14,6 @@ const ResultsState = State(
             }
         },
         setExposes(state, exposes) {
-            console.log(exposes);
             return {...state, exposes};
         },
         sortExposes(state, field) {
@@ -36,7 +21,7 @@ const ResultsState = State(
 
             const ascSortedExposes = state.exposes.slice().sort(
                 (a, b) => {
-                    const fieldValueA = deepFind(a, field), fieldValueB = deepFind(b, field);
+                    const fieldValueA = Utils.deepFind(a, field), fieldValueB = Utils.deepFind(b, field);
                     if (fieldValueA > fieldValueB) {
                         return 1;
                     } else if (fieldValueA < fieldValueB) {
@@ -53,21 +38,6 @@ const ResultsState = State(
         }
     }
 );
-
-const addressToGoogleMapLink = address => {
-    const regionEnc = address.region.trim().split(' ').join('+');
-    const realRegionCommaIndex = regionEnc.indexOf(',');
-    const regionCommaIndex = realRegionCommaIndex !== -1 ? realRegionCommaIndex : regionEnc.length;
-    const regionEncTrimmed = regionEnc.substring(0, regionCommaIndex);
-    const streetEnc = address.street.trim().split(' ').join('+');
-    // TODO: Move this to the backend
-    if (address.street === "Die vollständige Adresse der Immobilie erhalten Sie vom Anbieter.") {
-        return `https://www.google.de/maps/place/${regionEncTrimmed}`;
-    } else {
-        return `https://www.google.de/maps/place/${streetEnc},+${regionEncTrimmed}`;
-    }
-
-};
 
 const getSortingClassName = (field, ordering) => {
     return ordering.field !== field ? 'fa-sort' : ordering.direction === 'ASC' ? 'fa-sort-asc' : 'fa-sort-desc'
@@ -122,7 +92,7 @@ const Results = Component(
                                                 <td>{expose.roomAmount}</td>
                                                 <td>{Math.round(expose.surface * 100) / 100}</td>
                                                 <td>
-                                                    <a href={addressToGoogleMapLink(expose.address)}>
+                                                    <a href={Utils.addressToGoogleMapLink(expose.address)}>
                                                         {expose.address.region}, {expose.address.street}
                                                     </a>
                                                 </td>

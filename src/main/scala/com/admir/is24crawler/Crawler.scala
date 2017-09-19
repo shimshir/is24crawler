@@ -4,11 +4,11 @@ import akka.event.slf4j.SLF4JLogging
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
 import com.admir.is24crawler.models.{Expose, CrawlerSearchFilter}
-import com.admir.is24crawler.services.IsService
+import com.admir.is24crawler.services.Is24Service
 
 import scala.concurrent.Future
 
-class Crawler(isService: IsService)(implicit materializer: Materializer) extends SLF4JLogging {
+class Crawler(isService: Is24Service)(implicit materializer: Materializer) extends SLF4JLogging {
 
   def search(search: CrawlerSearchFilter): Future[Seq[Expose]] = {
     Source.fromFuture(isService.getResultPagePaths(search)).mapConcat(identity)

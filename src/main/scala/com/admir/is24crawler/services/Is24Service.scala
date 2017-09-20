@@ -26,7 +26,7 @@ class Is24Service(httpClient: HttpClient, browser: JsoupBrowser, config: Config)
   val is24Host: String = config.getString("is24.host")
   val is24SearchApi: String = config.getString("is24.search-endpoint")
 
-  def resultPagePath(filter: Is24SearchFilter): Future[Throwable Either ResultPagePath] = {
+  def fetchResultPagePath(filter: Is24SearchFilter): Future[Throwable Either ResultPagePath] = {
     val filterEntity = HttpEntity(ContentTypes.`application/json`, filter.body.compactPrint)
     val req = HttpRequest(HttpMethods.POST, is24SearchApi, entity = filterEntity)
     httpClient.executeAndConvert[JsObject](req).map { resObjectEither =>
@@ -47,7 +47,7 @@ class Is24Service(httpClient: HttpClient, browser: JsoupBrowser, config: Config)
 
     log.debug(s"Searching is24 with filter:\n${filter.body.prettyPrint}")
 
-    resultPagePath(filter).map {
+    fetchResultPagePath(filter).map {
       case Right(resultPagePath) =>
         val firstResultPageDoc = browser.get(is24Host + resultPagePath.first)
         val firstResultPageHasResults = (firstResultPageDoc >?> elementList("article.result-list-entry")).isDefined

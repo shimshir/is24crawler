@@ -3,7 +3,7 @@ import {Component, State, Actions, Effect} from 'jumpsuit'
 import {FormGroup, ControlLabel, FormControl, Button} from 'react-bootstrap'
 import httpClient from '../httpClient'
 import loadingImage from '../img/rotating-ring-loader.svg'
-import SuggestionInput from './suggestionInput'
+import LocationsTabPanel from './locationsTabPanel'
 
 const isPositiveNumeric = (n) => {
     return !isNaN(parseFloat(n)) && isFinite(n) && parseFloat(n) >= 0;
@@ -16,7 +16,8 @@ const SearchState = State(
             minRooms: '1.5',
             minSquare: '50',
             searchingStatus: 'NOT_SEARCHING',
-            locationNodes: []
+            byPlaceSearch: {},
+            locationSearchType: 'byPlace'
         },
         setMaxTotalPrice(state, maxTotalPrice) {
             return maxTotalPrice === '' || isPositiveNumeric(maxTotalPrice) ? {...state, maxTotalPrice} : state;
@@ -27,8 +28,11 @@ const SearchState = State(
         setMinSquare(state, minSquare) {
             return minSquare === '' || isPositiveNumeric(minSquare) ? {...state, minSquare} : state;
         },
-        setLocationNodes(state, locationNodes) {
-            return {...state, locationNodes};
+        setLocationSearchType(state, locationSearchType) {
+            return {...state, locationSearchType};
+        },
+        setByPlaceSearch(state, byPlaceSearch) {
+            return {...state, byPlaceSearch};
         },
         setSearchingStatus(state, searchingStatus) {
             return {...state, searchingStatus};
@@ -50,37 +54,29 @@ Effect('submitSearch', (searchData) => {
     });
 });
 
-Effect('fetchLocations', () => {
-    httpClient.get('/api/locations').then(res => {
-        Actions.setLocations(res.data);
-    })
-});
-
 const Search = Component(
     {
         submitForm() {
+            let locationSearch;
+            switch (this.props.search.locationSearchType) {
+                case 'byPlace':
+                    locationSearch = this.props.search.byPlaceSearch;
+                    break;
+                default:
+                    locationSearch = null;
+                    break;
+            }
             Actions.submitSearch(
                 {
                     maxTotalPrice: parseFloat(this.props.search.maxTotalPrice),
                     minRooms: parseFloat(this.props.search.minRooms),
                     minSquare: parseFloat(this.props.search.minSquare),
-                    locationNodes: this.props.search.locationNodes
+                    locationSearch: locationSearch
                 }
             )
         },
 
-        onChangeLocations(locationTags) {
-            Actions.setLocationNodes(locationTags.map(tag => tag.id))
-        },
-
-        componentWillMount() {
-            Actions.fetchLocations();
-        },
-
         render() {
-            const suggestionData = this.props.locations.map(location => {
-                return {id: location.key, text: location.value}
-            });
             return (
                 <div>
                     <form onSubmit={e => e.preventDefault()}>
@@ -109,13 +105,8 @@ const Search = Component(
                                 placeholder="Enter the square meters"
                                 onChange={event => Actions.setMinSquare(event.target.value)}
                             />
-                            <ControlLabel htmlFor="locationsInput">Locations</ControlLabel>
-                            <SuggestionInput
-                                id="locationsInput"
-                                suggestions={suggestionData}
-                                defaultTags={[{id: 1276003001, text: "Berlin"}]}
-                                placeholder="Add Location"
-                                onTagsChange={this.onChangeLocations}/>
+                            <ControlLabel>Location</ControlLabel>
+                            <LocationsTabPanel/>
                         </FormGroup>
                         <Button
                             type="submit"
@@ -133,8 +124,7 @@ const Search = Component(
         }
     }, (state) => {
         return {
-            search: state.search,
-            locations: state.backendData.locations
+            search: state.search
         };
     }
 );

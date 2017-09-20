@@ -36,12 +36,12 @@ class Is24Service(httpClient: HttpClient, browser: JsoupBrowser, config: Config)
     }
   }
 
-  def getResultPagePaths(search: CrawlerSearchFilter): Future[List[String]] = memoize(1 hour) {
+  def getResultPagePaths(search: CrawlerSearch): Future[List[String]] = memoize(1 hour) {
     val filter = Is24SearchFilter()
       .withNetAreaRange(search.minSquare, 100000)
       .withNetRentRange(0, search.maxTotalPrice)
       .withNumberOfRoomsRange(search.minRooms, 100000)
-      .withGeoInfoNodes(search.locationNodes: _*)
+      .withLocationSearch(search.locationSearch)
       .withWbsNeeded(false)
       .withOnlyWithKitchen(true)
 

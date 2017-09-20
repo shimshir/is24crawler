@@ -1,8 +1,15 @@
 package com.admir.is24crawler.search
 
+import com.admir.is24crawler.models.{ByPlaceSearch, LocationSearch}
 import spray.json._
 
 case class Is24SearchFilter(body: JsObject) {
+  def withLocationSearch(locationSearch: Option[LocationSearch]): Is24SearchFilter = locationSearch match {
+    case Some(ByPlaceSearch(geoNodes)) => withGeoInfoNodes(geoNodes)
+    case None => this
+    case _ => ???
+  }
+
   def withNetAreaRange(min: Double, max: Double): Is24SearchFilter = {
     Is24SearchFilter(JsObject(body.fields + ("netAreaRange" -> JsObject("min" -> JsNumber(min), "max" -> JsNumber(max)))))
   }
@@ -15,7 +22,7 @@ case class Is24SearchFilter(body: JsObject) {
     Is24SearchFilter(JsObject(body.fields + ("netRentRange" -> JsObject("min" -> JsNumber(min), "max" -> JsNumber(max)))))
   }
 
-  def withGeoInfoNodes(geoInfoNodes: Long*): Is24SearchFilter = {
+  def withGeoInfoNodes(geoInfoNodes: Seq[Long]): Is24SearchFilter = {
     Is24SearchFilter(JsObject(body.fields + ("geoInfoNodes" -> JsArray(geoInfoNodes.map(JsNumber(_)): _*))))
   }
 

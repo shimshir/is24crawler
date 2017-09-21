@@ -13,7 +13,7 @@ class Crawler(isService: Is24Service)(implicit materializer: Materializer) exten
   def search(search: CrawlerSearch): Future[Seq[Expose]] = {
     Source.fromFuture(isService.getResultPagePaths(search)).mapConcat(identity)
       .mapAsync(4)(isService.getExposeIds).mapConcat(identity)
-      .mapAsync(16)(isService.createExpose).filter(_.price.value <= search.maxTotalPrice)
+      .mapAsync(16)(isService.createExpose).filter(expose => search.priceFilter.flatMap(_.max).forall(maxPrice => expose.price.value <= maxPrice))
       .fold[List[Expose]](Nil)(_ :+ _)
       .mapConcat(_.sortBy(_.price.value))
       .runWith(Sink.seq)

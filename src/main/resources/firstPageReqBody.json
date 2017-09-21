@@ -8,7 +8,7 @@
   "flatShareSize": null,
   "shortTermAccommodationType": null,
   "centerOfSearchAddress": null,
-  "locationSelectionType": "GEO_HIERARCHY",
+  "locationSelectionType": null,
   "smokingAllowed": null,
   "flatMateGender": null,
   "assistedLivingCommercializationType": null,

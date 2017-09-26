@@ -31,8 +31,13 @@ class ApiRoute(crawler: Crawler, geoLocationService: GeoLocationService) extends
         } ~ complete(StatusCodes.BadRequest, "'query' parameter is required")
       } ~ (path("locations" / LongNumber) & get) { geoNode =>
         log.info(s"Fetching location entity for geoNode: $geoNode")
-        onSuccess(geoLocationService.fetchGeoLocationEntity(geoNode)) { locationEntity =>
-          complete(locationEntity)
+        onSuccess(geoLocationService.fetchGeoLocationEntity(geoNode)) {
+          case Left(t) =>
+            complete(StatusCodes.InternalServerError, t.getMessage)
+          case Right(None) =>
+            complete(StatusCodes.NotFound, s"Could not find geoLocationEntity for id: $geoNode")
+          case Right(Some(locationEntity)) =>
+            complete(locationEntity)
         }
       } ~ complete(StatusCodes.NotFound)
     }

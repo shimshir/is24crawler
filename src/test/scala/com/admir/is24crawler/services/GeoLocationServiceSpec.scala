@@ -1,6 +1,7 @@
 package com.admir.is24crawler.services
 
-import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.marshalling.Marshal
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import com.admir.is24crawler.Commons
 import com.admir.is24crawler.models._
 import com.admir.is24crawler.models.JsonProtocols._
@@ -13,7 +14,6 @@ import org.mockito.ArgumentMatchers._
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import spray.json._
 
 import scala.util.Try
 
@@ -72,7 +72,7 @@ class GeoLocationServiceSpec extends FlatSpec with Matchers with MockitoSugar {
 
     val mockClient = mock[HttpClient]
     when(mockClient.executeAndConvert[Seq[GeoLocationResult]](argThat(locationsArgumentMatcher))(any())).thenReturn(Future.successful(Right(testLocationResults)))
-    when(mockClient.executeAndConvert[GeoLocationEntity](argThat(geoDataArgumentMatcher))(any())).thenReturn(Future.successful(Right(testGeoLocationEntity)))
+    when(mockClient.execute(argThat(geoDataArgumentMatcher))).thenReturn(Marshal(testGeoLocationEntity).to[HttpResponse])
 
     val geoLocationService = new GeoLocationService(mockClient, Commons.config)
 

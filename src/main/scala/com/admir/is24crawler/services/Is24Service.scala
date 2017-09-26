@@ -15,7 +15,7 @@ import net.ruippeixotog.scalascraper.model.Document
 import spray.json.{DefaultJsonProtocol, JsObject}
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import scala.language.postfixOps
 import scalacache._
@@ -37,57 +37,62 @@ class Is24Service(httpClient: HttpClient, geoLocationService: GeoLocationService
     }
   }
 
-  def createIs24SearchFilter(search: CrawlerSearch): Is24SearchFilter = {
+  def addLocationSearchToFilter(baseFilter: Is24SearchFilter, locationSearch: LocationSearch): Future[Is24SearchFilter] = {
+    val is24LocationSearchOptFut = locationSearch match {
+      case ByPlaceSearch(geoNodes) =>
+        Future.successful(Some(Is24ByPlaceSearch(geoNodes)))
+      case ByDistanceSearch(geoNode, radius) =>
+        val geoLocationEntityOptEitherFut = geoLocationService.fetchGeoLocationEntity(geoNode)
+        geoLocationEntityOptEitherFut.map {
+          case Right(Some(geoLocationEntity)) =>
+            Some(Is24ByDistanceSearch(geoNode, radius, geoLocationEntity.geoData, geoLocationEntity.address))
+          case Right(None) =>
+            None
+          case Left(t) =>
+            log.error(s"Could not get geoDataAndAddress for geoNode: $geoNode", t)
+            None
+        }
+    }
+
+    is24LocationSearchOptFut.map { is24LocationSearchOpt =>
+        is24LocationSearchOpt.map(baseFilter.withLocationSearch).getOrElse(baseFilter)
+    }
+  }
+
+  def createIs24SearchFilter(search: CrawlerSearch): Future[Is24SearchFilter] = {
     val is24Filter = Is24SearchFilter()
     val is24PriceFilter = search.priceFilter.map(is24Filter.withNetRentRange).getOrElse(is24Filter)
     val is24RoomAmountFilter = search.roomAmountFilter.map(is24PriceFilter.withNumberOfRoomsRange).getOrElse(is24PriceFilter)
     val is24AreaFilter = search.surfaceFilter.map(is24RoomAmountFilter.withNetAreaRange).getOrElse(is24RoomAmountFilter)
 
-    val is24LocationSearchOpt = search.locationSearch.flatMap {
-      case ByPlaceSearch(geoNodes) =>
-        Some(Is24ByPlaceSearch(geoNodes))
-      case ByDistanceSearch(geoNode, radius) =>
-        val geoDataAndAddressFut = geoLocationService.fetchGeoLocationEntity(geoNode)
-        val is24ByDistanceSearchFut = geoDataAndAddressFut.map {
-          case Right(geoLocationEntity) =>
-            Some(Is24ByDistanceSearch(geoNode, radius, geoLocationEntity.geoData, geoLocationEntity.address))
-          case Left(t) =>
-            log.error(s"Could not get geoDataAndAddress for geoNode: $geoNode", t)
-            throw t
-        }
-
-        Await.result(is24ByDistanceSearchFut.recover[Option[Is24LocationSearch]] { case _ => None }, 3.seconds)
-    }
-    val finalFilter = is24LocationSearchOpt.map(is24AreaFilter.withLocationSearch).getOrElse(is24AreaFilter)
-    finalFilter
+    search.locationSearch.map(locSearch => addLocationSearchToFilter(is24AreaFilter, locSearch)).getOrElse(Future.successful(is24AreaFilter))
   }
 
   def getResultPagePaths(search: CrawlerSearch): Future[List[String]] = memoize(1 hour) {
-    val filter = createIs24SearchFilter(search)
-
-    log.debug(s"Searching is24 with filter:\n${filter.body.prettyPrint}")
-
-    fetchResultPagePath(filter).map {
-      case Right(resultPagePath) =>
-        val firstResultPageDoc = browser.get(is24Host + resultPagePath.first)
-        val firstResultPageHasResults = (firstResultPageDoc >?> elementList("article.result-list-entry")).isDefined
-        val selectElementOpt = firstResultPageDoc >?> element("#pageSelection > select")
-        (firstResultPageHasResults, selectElementOpt) match {
-          case (false, None) =>
-            Nil
-          case (true, None) =>
-            List(resultPagePath.first)
-          case (true, Some(selectElement)) =>
-            val lastPageNumber = (selectElement >> elementList("option") >> attr("value")).last.toInt
-            log.info(s"Found total of $lastPageNumber result pages")
-            1 to lastPageNumber map resultPagePath.withPageNum toList
-          case _ =>
-            log.error("Unexpected result after requesting first page")
-            Nil
-        }
-      case Left(t) =>
-        log.error("Could not retrieve first page path", t)
-        Nil
+    createIs24SearchFilter(search).flatMap { filter =>
+      log.debug(s"Searching is24 with filter:\n${filter.body.prettyPrint}")
+      fetchResultPagePath(filter).map {
+        case Right(resultPagePath) =>
+          val firstResultPageDoc = browser.get(is24Host + resultPagePath.first)
+          val firstResultPageHasResults = (firstResultPageDoc >?> elementList("article.result-list-entry")).isDefined
+          val selectElementOpt = firstResultPageDoc >?> element("#pageSelection > select")
+          (firstResultPageHasResults, selectElementOpt) match {
+            case (false, None) =>
+              Nil
+            case (true, None) =>
+              List(resultPagePath.first)
+            case (true, Some(selectElement)) =>
+              val lastPageNumber = (selectElement >> elementList("option") >> attr("value")).last.toInt
+              log.info(s"Found total of $lastPageNumber result pages")
+              1 to lastPageNumber map resultPagePath.withPageNum toList
+            case _ =>
+              log.error("Unexpected result after requesting first page")
+              Nil
+          }
+        case Left(t) =>
+          log.error("Could not retrieve first page path", t)
+          Nil
+      }
     }
   }
 

@@ -9,7 +9,7 @@ case class Is24SearchFilter(body: JsObject) {
     case Is24ByPlaceSearch(geoNodes) =>
       withLocationSelectionType("GEO_HIERARCHY")
         .withGeoInfoNodes(geoNodes)
-    case Is24ByDistanceSearch(geoNode, geoDataAndAddress, radius) =>
+    case Is24ByDistanceSearch(geoNode, radius, geoDataAndAddress) =>
       withLocationSelectionType("VICINITY")
         .withGeoInfoNodes(Seq(geoNode))
         .withCenterOfSearchAddress(geoDataAndAddress.address)

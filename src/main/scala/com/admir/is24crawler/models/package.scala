@@ -12,7 +12,7 @@ package object models {
 
   abstract class Is24LocationSearch(val locationSelectionType: String)
   case class Is24ByPlaceSearch(geoNodes: Seq[Long]) extends Is24LocationSearch("GEO_HIERARCHY")
-  case class Is24ByDistanceSearch(geoNode: Long, geoDataAndAddress: GeoDataAndAddress, radius: Int) extends Is24LocationSearch("VICINITY")
+  case class Is24ByDistanceSearch(geoNode: Long, radius: Int, geoDataAndAddress: GeoDataAndAddress) extends Is24LocationSearch("VICINITY")
 
   case class MinMaxFilter(min: Option[Double], max: Option[Double])
 

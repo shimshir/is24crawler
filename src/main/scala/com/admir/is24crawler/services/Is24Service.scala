@@ -1,5 +1,6 @@
 package com.admir.is24crawler.services
 
+import akka.actor.ActorSystem
 import akka.event.slf4j.SLF4JLogging
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest}
@@ -14,14 +15,14 @@ import net.ruippeixotog.scalascraper.model.Document
 import spray.json.{DefaultJsonProtocol, JsObject}
 
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import scala.language.postfixOps
 import scalacache._
 import memoization._
 
-class Is24Service(httpClient: HttpClient, browser: JsoupBrowser, config: Config)
-                 (implicit ec: ExecutionContext, scalaCache: ScalaCache[NoSerialization]) extends SLF4JLogging with DefaultJsonProtocol with SprayJsonSupport {
+class Is24Service(httpClient: HttpClient, geoLocationService: GeoLocationService, browser: JsoupBrowser, config: Config)
+                 (implicit actorSystem: ActorSystem, ec: ExecutionContext, scalaCache: ScalaCache[NoSerialization]) extends SLF4JLogging with DefaultJsonProtocol with SprayJsonSupport {
 
   val is24Host: String = config.getString("is24.host")
   val is24SearchApi: String = config.getString("is24.search-endpoint")
@@ -36,14 +37,35 @@ class Is24Service(httpClient: HttpClient, browser: JsoupBrowser, config: Config)
     }
   }
 
+  def createIs24SearchFilter(search: CrawlerSearch): Is24SearchFilter = {
+    val is24Filter = Is24SearchFilter()
+    val is24PriceFilter = search.priceFilter.map(is24Filter.withNetRentRange).getOrElse(is24Filter)
+    val is24RoomAmountFilter = search.roomAmountFilter.map(is24PriceFilter.withNumberOfRoomsRange).getOrElse(is24PriceFilter)
+    val is24AreaFilter = search.surfaceFilter.map(is24RoomAmountFilter.withNetAreaRange).getOrElse(is24RoomAmountFilter)
+
+    val is24LocationSearchOpt = search.locationSearch.flatMap {
+      case ByPlaceSearch(geoNodes) =>
+        Some(Is24ByPlaceSearch(geoNodes))
+      case ByDistanceSearch(geoNode, Some(geoDataAndAddress), radius) =>
+        Some(Is24ByDistanceSearch(geoNode, geoDataAndAddress, radius))
+      case ByDistanceSearch(geoNode, None, radius) =>
+        val geoDataAndAddressFut = geoLocationService.fetchGeoDataAndAddress(geoNode.toString)
+        val is24ByDistanceSearchFut = geoDataAndAddressFut.map {
+          case Right(gdaa) =>
+            Some(Is24ByDistanceSearch(geoNode, gdaa, radius))
+          case Left(t) =>
+            log.error(s"Could not get geoDataAndAddress for geoNode: $geoNode", t)
+            throw t
+        }
+
+        Await.result(is24ByDistanceSearchFut.recover[Option[Is24LocationSearch]] { case _ => None }, 3.seconds)
+    }
+    val finalFilter = is24LocationSearchOpt.map(is24AreaFilter.withLocationSearch).getOrElse(is24AreaFilter)
+    finalFilter
+  }
+
   def getResultPagePaths(search: CrawlerSearch): Future[List[String]] = memoize(1 hour) {
-    val filter = Is24SearchFilter()
-      .withNetAreaRange(search.minSquare, 100000)
-      .withNetRentRange(0, search.maxTotalPrice)
-      .withNumberOfRoomsRange(search.minRooms, 100000)
-      .withLocationSearch(search.locationSearch)
-      .withWbsNeeded(false)
-      .withOnlyWithKitchen(true)
+    val filter = createIs24SearchFilter(search)
 
     log.debug(s"Searching is24 with filter:\n${filter.body.prettyPrint}")
 

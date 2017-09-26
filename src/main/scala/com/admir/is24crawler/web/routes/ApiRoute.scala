@@ -7,11 +7,10 @@ import akka.http.scaladsl.server.Route
 import com.admir.is24crawler.Crawler
 import com.admir.is24crawler.models.JsonProtocols._
 import com.admir.is24crawler.models.CrawlerSearch
-import com.admir.is24crawler.search.Is24SearchFilter
+import com.admir.is24crawler.services.GeoLocationService
 import spray.json._
-import com.admir.is24crawler.web.mapToKeyValueJsArray
 
-class ApiRoute(crawler: Crawler) extends SLF4JLogging {
+class ApiRoute(crawler: Crawler, geoLocationService: GeoLocationService) extends SLF4JLogging {
   def route: Route =
     pathPrefix("api") {
       path("exposes") {
@@ -22,19 +21,14 @@ class ApiRoute(crawler: Crawler) extends SLF4JLogging {
             complete(exposes)
           }
         }
-      } ~ path("locations") {
-        get {
-          parameter('region.?) {
-            case Some(region) => region.toLowerCase match {
-              case "berlin" =>
-                complete(mapToKeyValueJsArray(Is24SearchFilter.geoLocationsBerlin))
-              case _ =>
-                complete(StatusCodes.NotFound)
-            }
-            case None =>
-              complete(mapToKeyValueJsArray(Is24SearchFilter.allLocations))
+      } ~ (path("locations") & get) {
+        parameter('query) { locationQuery =>
+          log.info(s"Looking for '$locationQuery' locations")
+          onSuccess(geoLocationService.searchWithGeoData(locationQuery)) { locationEntities =>
+            log.debug(s"Completing request with ${locationEntities.size} location results")
+            complete(locationEntities)
           }
-        }
-      }
+        } ~ complete(StatusCodes.BadRequest, "'query' parameter is required")
+      } ~ complete(StatusCodes.NotFound)
     }
 }

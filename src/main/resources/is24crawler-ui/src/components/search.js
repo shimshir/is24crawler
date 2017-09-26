@@ -17,6 +17,7 @@ const SearchState = State(
             minSquare: '50',
             searchingStatus: 'NOT_SEARCHING',
             byPlaceSearch: {},
+            byDistanceSearch: {radius: 1},
             locationSearchType: 'byPlace'
         },
         setMaxTotalPrice(state, maxTotalPrice) {
@@ -33,6 +34,14 @@ const SearchState = State(
         },
         setByPlaceSearch(state, byPlaceSearch) {
             return {...state, byPlaceSearch};
+        },
+        setByDistanceSearch(state, byDistanceSearch) {
+            const currentByDistanceSearch = state.byDistanceSearch;
+            return {...state, byDistanceSearch: {...currentByDistanceSearch, ...byDistanceSearch}};
+        },
+        setByDistanceRadius(state, radius) {
+            const currentByDistanceSearch = state.byDistanceSearch;
+            return {...state, byDistanceSearch: {...currentByDistanceSearch, radius}};
         },
         setSearchingStatus(state, searchingStatus) {
             return {...state, searchingStatus};
@@ -60,7 +69,10 @@ const Search = Component(
             let locationSearch;
             switch (this.props.search.locationSearchType) {
                 case 'byPlace':
-                    locationSearch = this.props.search.byPlaceSearch;
+                    locationSearch = {type: 'byPlace', geoNodes: this.props.search.byPlaceSearch.selectedLocations.map(loc => parseInt(loc.id, 10))};
+                    break;
+                case 'byDistance':
+                    locationSearch = {type: 'byDistance', geoNode: parseInt(this.props.search.byDistanceSearch.selectedLocation.id, 10), radius: this.props.search.byDistanceSearch.radius};
                     break;
                 default:
                     locationSearch = null;
@@ -68,9 +80,9 @@ const Search = Component(
             }
             Actions.submitSearch(
                 {
-                    maxTotalPrice: parseFloat(this.props.search.maxTotalPrice),
-                    minRooms: parseFloat(this.props.search.minRooms),
-                    minSquare: parseFloat(this.props.search.minSquare),
+                    priceFilter: {max: parseFloat(this.props.search.maxTotalPrice)},
+                    roomAmountFilter: {min: parseFloat(this.props.search.minRooms)},
+                    surfaceFilter: {min: parseFloat(this.props.search.minSquare)},
                     locationSearch: locationSearch
                 }
             )

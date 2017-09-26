@@ -1,26 +1,54 @@
 package com.admir.is24crawler.search
 
-import com.admir.is24crawler.models.{ByPlaceSearch, LocationSearch}
+import com.admir.is24crawler.models._
+import com.admir.is24crawler.models.JsonProtocols._
 import spray.json._
 
 case class Is24SearchFilter(body: JsObject) {
-  def withLocationSearch(locationSearch: Option[LocationSearch]): Is24SearchFilter = locationSearch match {
-    case Some(ByPlaceSearch(geoNodes)) => withGeoInfoNodes(geoNodes)
-    case None => this
-    case _ => ???
+  def withLocationSearch(locationSearch: Is24LocationSearch): Is24SearchFilter = locationSearch match {
+    case Is24ByPlaceSearch(geoNodes) =>
+      withLocationSelectionType("GEO_HIERARCHY")
+        .withGeoInfoNodes(geoNodes)
+    case Is24ByDistanceSearch(geoNode, geoDataAndAddress, radius) =>
+      withLocationSelectionType("VICINITY")
+        .withGeoInfoNodes(Seq(geoNode))
+        .withCenterOfSearchAddress(geoDataAndAddress.address)
+        .withCenterX(geoDataAndAddress.geoData.x)
+        .withCenterY(geoDataAndAddress.geoData.y)
+        .withRadius(radius)
   }
 
-  def withNetAreaRange(min: Double, max: Double): Is24SearchFilter = {
-    Is24SearchFilter(JsObject(body.fields + ("netAreaRange" -> JsObject("min" -> JsNumber(min), "max" -> JsNumber(max)))))
+  def withCenterOfSearchAddress(address: Is24Address): Is24SearchFilter = {
+    Is24SearchFilter(JsObject(body.fields + ("centerOfSearchAddress" -> address.toJson)))
   }
 
-  def withNumberOfRoomsRange(min: Double, max: Double): Is24SearchFilter = {
-    Is24SearchFilter(JsObject(body.fields + ("numberOfRoomsRange" -> JsObject("min" -> JsNumber(min), "max" -> JsNumber(max)))))
+  def withCenterX(centerX: Int): Is24SearchFilter = {
+    Is24SearchFilter(JsObject(body.fields + ("centerX" -> JsNumber(centerX))))
   }
 
-  def withNetRentRange(min: Double, max: Double): Is24SearchFilter = {
-    Is24SearchFilter(JsObject(body.fields + ("netRentRange" -> JsObject("min" -> JsNumber(min), "max" -> JsNumber(max)))))
+  def withCenterY(centerY: Int): Is24SearchFilter = {
+    Is24SearchFilter(JsObject(body.fields + ("centerY" -> JsNumber(centerY))))
   }
+
+  def withRadius(radius: Int): Is24SearchFilter = {
+    Is24SearchFilter(JsObject(body.fields + ("radius" -> JsNumber(radius))))
+  }
+
+  def withLocationSelectionType(selectionType: String): Is24SearchFilter = {
+    Is24SearchFilter(JsObject(body.fields + ("locationSelectionType" -> JsString(selectionType))))
+  }
+
+  private def withMinMaxFilter(minMaxFilter: MinMaxFilter, fieldName: String): Is24SearchFilter = {
+    val minJs = minMaxFilter.min.map(JsNumber(_)).getOrElse(JsNull)
+    val maxJs = minMaxFilter.max.map(JsNumber(_)).getOrElse(JsNull)
+    Is24SearchFilter(JsObject(body.fields + (fieldName -> JsObject("min" -> minJs, "max" -> maxJs))))
+  }
+
+  def withNetRentRange: MinMaxFilter => Is24SearchFilter = withMinMaxFilter(_, "netRentRange")
+
+  def withNetAreaRange: MinMaxFilter => Is24SearchFilter = withMinMaxFilter(_, "netAreaRange")
+
+  def withNumberOfRoomsRange: MinMaxFilter => Is24SearchFilter = withMinMaxFilter(_, "numberOfRoomsRange")
 
   def withGeoInfoNodes(geoInfoNodes: Seq[Long]): Is24SearchFilter = {
     Is24SearchFilter(JsObject(body.fields + ("geoInfoNodes" -> JsArray(geoInfoNodes.map(JsNumber(_)): _*))))

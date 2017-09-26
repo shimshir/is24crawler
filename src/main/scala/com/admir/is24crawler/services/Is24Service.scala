@@ -46,13 +46,11 @@ class Is24Service(httpClient: HttpClient, geoLocationService: GeoLocationService
     val is24LocationSearchOpt = search.locationSearch.flatMap {
       case ByPlaceSearch(geoNodes) =>
         Some(Is24ByPlaceSearch(geoNodes))
-      case ByDistanceSearch(geoNode, radius, Some(geoDataAndAddress)) =>
-        Some(Is24ByDistanceSearch(geoNode, radius, geoDataAndAddress))
-      case ByDistanceSearch(geoNode, radius, None) =>
-        val geoDataAndAddressFut = geoLocationService.fetchGeoDataAndAddress(geoNode.toString)
+      case ByDistanceSearch(geoNode, radius) =>
+        val geoDataAndAddressFut = geoLocationService.fetchGeoLocationEntity(geoNode)
         val is24ByDistanceSearchFut = geoDataAndAddressFut.map {
-          case Right(gdaa) =>
-            Some(Is24ByDistanceSearch(geoNode, radius, gdaa))
+          case Right(geoLocationEntity) =>
+            Some(Is24ByDistanceSearch(geoNode, radius, geoLocationEntity.geoData, geoLocationEntity.address))
           case Left(t) =>
             log.error(s"Could not get geoDataAndAddress for geoNode: $geoNode", t)
             throw t

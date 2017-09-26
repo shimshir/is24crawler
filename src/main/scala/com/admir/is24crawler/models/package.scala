@@ -8,11 +8,11 @@ package object models {
 
   abstract class LocationSearch(val `type`: String)
   case class ByPlaceSearch(geoNodes: Seq[Long]) extends LocationSearch("byPlace")
-  case class ByDistanceSearch(geoNode: Long, radius: Int, geoDataAndAddress: Option[GeoDataAndAddress]) extends LocationSearch("byDistance")
+  case class ByDistanceSearch(geoNode: Long, radius: Int) extends LocationSearch("byDistance")
 
   abstract class Is24LocationSearch(val locationSelectionType: String)
   case class Is24ByPlaceSearch(geoNodes: Seq[Long]) extends Is24LocationSearch("GEO_HIERARCHY")
-  case class Is24ByDistanceSearch(geoNode: Long, radius: Int, geoDataAndAddress: GeoDataAndAddress) extends Is24LocationSearch("VICINITY")
+  case class Is24ByDistanceSearch(geoNode: Long, radius: Int, geoData: GeoData, address: Is24Address) extends Is24LocationSearch("VICINITY")
 
   case class MinMaxFilter(min: Option[Double], max: Option[Double])
 
@@ -46,15 +46,15 @@ package object models {
 
   case class GeoData(x: Int, y: Int)
   case class Is24Address(city: Option[String], region: Option[String] = None, quarter: Option[String] = None)
-  case class GeoDataAndAddress(geoData: GeoData, address: Is24Address)
-  case class GeoLocationEntity(id: String, label: String, `type`: String, geoDataAndAddress: Option[GeoDataAndAddress] = None)
-  case class GeoLocationResult(entity: GeoLocationEntity)
+  case class GeoLocationEntity(id: String, label: String, `type`: String, geoData: GeoData, address: Is24Address)
+  case class GeoLocationResultEntity(id: String)
+  case class GeoLocationResult(entity: GeoLocationResultEntity)
 
   object JsonProtocols extends SprayJsonSupport with DefaultJsonProtocol {
 
     implicit lazy val locationSearchFormat: RootJsonFormat[LocationSearch] = new RootJsonFormat[LocationSearch] {
       private val byPlaceFormat = jsonFormat1(ByPlaceSearch)
-      private val byDistanceFormat = jsonFormat3(ByDistanceSearch)
+      private val byDistanceFormat = jsonFormat2(ByDistanceSearch)
 
       def write(obj: LocationSearch): JsValue = {
         val baseJson = obj match {
@@ -85,8 +85,8 @@ package object models {
 
     implicit lazy val is24AddressFormat: RootJsonFormat[Is24Address] = jsonFormat3(Is24Address)
     implicit lazy val geoDataFormat: RootJsonFormat[GeoData] = jsonFormat2(GeoData)
-    implicit lazy val geoDataAndAddressFormat: RootJsonFormat[GeoDataAndAddress] = jsonFormat2(GeoDataAndAddress)
-    implicit lazy val geoLocationEntityFormat: RootJsonFormat[GeoLocationEntity] = jsonFormat4(GeoLocationEntity)
+    implicit lazy val geoLocationEntityFormat: RootJsonFormat[GeoLocationEntity] = jsonFormat5(GeoLocationEntity)
+    implicit lazy val geoLocationResultEntity: RootJsonFormat[GeoLocationResultEntity] = jsonFormat1(GeoLocationResultEntity)
     implicit lazy val geoLocationResult: RootJsonFormat[GeoLocationResult] = jsonFormat1(GeoLocationResult)
   }
 

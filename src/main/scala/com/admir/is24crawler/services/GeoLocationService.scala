@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
-import com.admir.is24crawler.models.{GeoDataAndAddress, GeoLocationEntity, GeoLocationResult}
+import com.admir.is24crawler.models.{GeoLocationEntity, GeoLocationResult}
 import com.admir.is24crawler.models.JsonProtocols._
 import com.admir.is24crawler.web.HttpClient
 import com.typesafe.config.Config
@@ -22,7 +22,7 @@ class GeoLocationService(httpClient: HttpClient, config: Config)(implicit ec: Ex
 
   def geoDataEndpoint(locationId: String): String = String.format(geoDataEndpointTemplate, locationId)
 
-  def search(locationQuery: String): Future[Seq[GeoLocationEntity]] = {
+  def searchGeoNodes(locationQuery: String): Future[Seq[Long]] = {
     val fullUri = Uri(geoAutocompleteEndpoint).withQuery(Query("i" -> locationQuery))
     val req = HttpRequest(uri = fullUri)
     httpClient.executeAndConvert[Seq[GeoLocationResult]](req).map {
@@ -30,20 +30,20 @@ class GeoLocationService(httpClient: HttpClient, config: Config)(implicit ec: Ex
         log.error("Could not fetch locations", t)
         Nil
       case Right(locations) =>
-        locations.map(_.entity)
+        locations.map(_.entity.id.toLong)
     }
   }
 
-  def searchWithGeoData(locationQuery: String): Future[Seq[GeoLocationEntity]] = {
-    Source.fromFuture(search(locationQuery))
+  def searchGeoLocationEntity(locationQuery: String): Future[Seq[GeoLocationEntity]] = {
+    Source.fromFuture(searchGeoNodes(locationQuery))
       .mapConcat(_.toVector)
-      .mapAsync(4) { entity =>
-        fetchGeoDataAndAddress(entity.id).map {
+      .mapAsync(4) { geoNode =>
+        fetchGeoLocationEntity(geoNode).map {
           case Left(t) =>
             log.error("Could not fetch geoData", t)
             Left(t)
-          case Right(gdaa) =>
-            Right(entity.copy(geoDataAndAddress = Some(gdaa)))
+          case Right(geoLocationEntity) =>
+            Right(geoLocationEntity)
         }
       }
       .collect {
@@ -53,9 +53,9 @@ class GeoLocationService(httpClient: HttpClient, config: Config)(implicit ec: Ex
       .runWith(Sink.seq)
   }
 
-  def fetchGeoDataAndAddress(geoNodeId: String): Future[Throwable Either GeoDataAndAddress] = memoize(None) {
-    val endpoint = geoDataEndpoint(geoNodeId)
+  def fetchGeoLocationEntity(geoNodeId: Long): Future[Throwable Either GeoLocationEntity] = memoize(None) {
+    val endpoint = geoDataEndpoint(geoNodeId.toString)
     val req = HttpRequest(uri = endpoint)
-    httpClient.executeAndConvert[GeoDataAndAddress](req)
+    httpClient.executeAndConvert[GeoLocationEntity](req)
   }
 }

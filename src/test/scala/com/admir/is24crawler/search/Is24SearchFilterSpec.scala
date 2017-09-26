@@ -14,7 +14,8 @@ class Is24SearchFilterSpec extends FlatSpec with Matchers with SprayJsonSupport 
 
     val locSearch = Is24ByDistanceSearch(
       geoNode = 1276003001,
-      geoDataAndAddress = GeoDataAndAddress(geoData, is24Address),
+      geoData = geoData,
+      address = is24Address,
       radius = 5
     )
 

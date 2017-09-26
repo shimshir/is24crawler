@@ -56,7 +56,8 @@ class Is24ServiceSpec extends FlatSpec with Matchers with MockitoSugar {
 
     val locSearch = Is24ByDistanceSearch(
       geoNode = 1276003001,
-      geoDataAndAddress = GeoDataAndAddress(geoData, is24Address),
+      geoData = geoData,
+      address = is24Address,
       radius = 5
     )
 

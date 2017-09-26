@@ -23,24 +23,22 @@ class GeoLocationServiceSpec extends FlatSpec with Matchers with MockitoSugar {
 
   val httpClient = new HttpClient()
 
+  val testGeoData = GeoData(x = 42, y = 24)
+  val testIs24Address = Is24Address(city = Some("Berlin"), region = Some("Berlin"))
+
   val testGeoLocationEntity =
     GeoLocationEntity(
       id = "1276003001",
       label = "Berlin",
-      `type` = "city"
+      `type` = "city",
+      geoData = testGeoData,
+      address = testIs24Address
     )
 
-  val testGeoLocationResult = GeoLocationResult(testGeoLocationEntity)
+  val testLocationResultEntity = GeoLocationResultEntity(testGeoLocationEntity.id)
+  val testLocationResults = Seq(GeoLocationResult(testLocationResultEntity))
 
-  val testGeoData = GeoData(x = 42, y = 24)
-  val testIs24Address = Is24Address(city = Some("Berlin"), region = Some("Berlin"))
-
-  val testGeoDataAndAddress = GeoDataAndAddress(geoData = testGeoData, address = testIs24Address)
-
-  val testLocationEntities = Seq(testGeoLocationEntity)
-  val testLocationResults = Seq(testGeoLocationResult)
-
-  "search(locationQuery)" should "retrieve geo locations from is24 without the geoData" in {
+  "searchGeoNodes(locationQuery)" should "retrieve geo node ids from is24" in {
 
     val mockClient = mock[HttpClient]
     val reqCaptor: ArgumentCaptor[HttpRequest] = ArgumentCaptor.forClass(classOf[HttpRequest])
@@ -48,13 +46,13 @@ class GeoLocationServiceSpec extends FlatSpec with Matchers with MockitoSugar {
 
     val geoLocationService = new GeoLocationService(mockClient, Commons.config)
 
-    val geoLocationEntitiesFut = geoLocationService.search(testGeoLocationEntity.label)
-    val geoLocationEntities = Await.result(geoLocationEntitiesFut, 5.seconds)
-    geoLocationEntities.head shouldEqual testLocationResults.head.entity
+    val geoNodeIdsFut = geoLocationService.searchGeoNodes(testGeoLocationEntity.label)
+    val geoNodeIds = Await.result(geoNodeIdsFut, 5.seconds)
+    geoNodeIds.head shouldEqual testLocationResultEntity.id.toLong
     reqCaptor.getValue.uri.query().get("i") shouldEqual Some(testGeoLocationEntity.label)
   }
 
-  "searchWithGeoData(locationQuery)" should "retrieve geo locations from is24 with the geoData" in {
+  "searchGeoLocationEntity(locationQuery)" should "retrieve geo locations entities from is24" in {
 
     val locationsArgumentMatcher: ArgumentMatcher[HttpRequest] = req => {
       val matches = Try(req.uri.path.toString == "/geoautocomplete/v3/locations.json").getOrElse(false)
@@ -74,12 +72,12 @@ class GeoLocationServiceSpec extends FlatSpec with Matchers with MockitoSugar {
 
     val mockClient = mock[HttpClient]
     when(mockClient.executeAndConvert[Seq[GeoLocationResult]](argThat(locationsArgumentMatcher))(any())).thenReturn(Future.successful(Right(testLocationResults)))
-    when(mockClient.executeAndConvert[GeoDataAndAddress](argThat(geoDataArgumentMatcher))(any())).thenReturn(Future.successful(Right(testGeoDataAndAddress)))
+    when(mockClient.executeAndConvert[GeoLocationEntity](argThat(geoDataArgumentMatcher))(any())).thenReturn(Future.successful(Right(testGeoLocationEntity)))
 
     val geoLocationService = new GeoLocationService(mockClient, Commons.config)
 
-    val withGdsFut = geoLocationService.searchWithGeoData(testGeoLocationEntity.label)
+    val withGdsFut = geoLocationService.searchGeoLocationEntity(testGeoLocationEntity.label)
     val withGds = Await.result(withGdsFut, 5.seconds)
-    withGds.head shouldBe testGeoLocationEntity.copy(geoDataAndAddress = Some(testGeoDataAndAddress))
+    withGds.head shouldBe testGeoLocationEntity
   }
 }

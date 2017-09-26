@@ -24,11 +24,16 @@ class ApiRoute(crawler: Crawler, geoLocationService: GeoLocationService) extends
       } ~ (path("locations") & get) {
         parameter('query) { locationQuery =>
           log.info(s"Looking for '$locationQuery' locations")
-          onSuccess(geoLocationService.searchWithGeoData(locationQuery)) { locationEntities =>
+          onSuccess(geoLocationService.searchGeoLocationEntity(locationQuery)) { locationEntities =>
             log.debug(s"Completing request with ${locationEntities.size} location results")
             complete(locationEntities)
           }
         } ~ complete(StatusCodes.BadRequest, "'query' parameter is required")
+      } ~ (path("locations" / LongNumber) & get) { geoNode =>
+        log.info(s"Fetching location entity for geoNode: $geoNode")
+        onSuccess(geoLocationService.fetchGeoLocationEntity(geoNode)) { locationEntity =>
+          complete(locationEntity)
+        }
       } ~ complete(StatusCodes.NotFound)
     }
 }

@@ -8,7 +8,7 @@ package object models {
 
   abstract class LocationSearch(val `type`: String)
   case class ByPlaceSearch(geoNodes: Seq[Long]) extends LocationSearch("byPlace")
-  case class ByDistanceSearch(geoNode: Long, geoDataAndAddress: Option[GeoDataAndAddress], radius: Int) extends LocationSearch("byDistance")
+  case class ByDistanceSearch(geoNode: Long, radius: Int, geoDataAndAddress: Option[GeoDataAndAddress]) extends LocationSearch("byDistance")
 
   abstract class Is24LocationSearch(val locationSelectionType: String)
   case class Is24ByPlaceSearch(geoNodes: Seq[Long]) extends Is24LocationSearch("GEO_HIERARCHY")

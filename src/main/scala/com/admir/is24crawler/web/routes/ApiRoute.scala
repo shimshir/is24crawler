@@ -25,7 +25,7 @@ class ApiRoute(crawler: Crawler, geoLocationService: GeoLocationService) extends
         parameter('query) { locationQuery =>
           log.info(s"Looking for '$locationQuery' locations")
           onSuccess(geoLocationService.searchWithGeoData(locationQuery)) { locationEntities =>
-            log.info(s"Completing request with ${locationEntities.size} location results")
+            log.debug(s"Completing request with ${locationEntities.size} location results")
             complete(locationEntities)
           }
         } ~ complete(StatusCodes.BadRequest, "'query' parameter is required")

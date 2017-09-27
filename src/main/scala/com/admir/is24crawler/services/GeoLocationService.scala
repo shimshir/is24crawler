@@ -23,16 +23,19 @@ class GeoLocationService(httpClient: HttpClient, config: Config)(implicit ec: Ex
 
   def geoDataEndpoint(locationId: String): String = String.format(geoDataEndpointTemplate, locationId)
 
-  def searchGeoNodes(locationQuery: String): Future[Seq[Long]] = {
-    val fullUri = Uri(geoAutocompleteEndpoint).withQuery(Query("i" -> locationQuery))
-    val req = HttpRequest(uri = fullUri)
-    httpClient.executeAndConvert[Seq[GeoLocationResult]](req).map {
-      case Left(t) =>
-        log.error("Could not fetch locations", t)
-        Nil
-      case Right(locations) =>
-        locations.map(_.entity.id.toLong)
-    }
+  def searchGeoNodes(locationQuery: String): Future[Seq[Long]] = locationQuery match {
+    case "" =>
+      Future.successful(Nil)
+    case nonEmptyQuery =>
+      val fullUri = Uri(geoAutocompleteEndpoint).withQuery(Query("i" -> nonEmptyQuery))
+      val req = HttpRequest(uri = fullUri)
+      httpClient.executeAndConvert[Seq[GeoLocationResult]](req).map {
+        case Left(t) =>
+          log.error("Could not fetch locations", t)
+          Nil
+        case Right(locations) =>
+          locations.map(_.entity.id.toLong)
+      }
   }
 
   def searchGeoLocationEntity(locationQuery: String): Future[Seq[GeoLocationEntity]] = {

@@ -22,7 +22,7 @@ class ApiRoute(crawler: Crawler, geoLocationService: GeoLocationService) extends
           }
         }
       } ~ (path("locations") & get) {
-        parameter('query) { locationQuery =>
+        parameter('label) { locationQuery =>
           log.info(s"Looking for '$locationQuery' locations")
           onSuccess(geoLocationService.searchGeoLocationEntity(locationQuery)) { locationEntities =>
             log.debug(s"Completing request with ${locationEntities.size} location results")

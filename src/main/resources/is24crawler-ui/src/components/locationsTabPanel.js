@@ -5,8 +5,8 @@ import httpClient from '../httpClient'
 import SuggestionTags from './suggestionTags'
 import ByDistanceTabContent from './byDistanceTabContent'
 
-Effect('fetchLocations', (query) => {
-    httpClient.get(`/api/locations?query=${query}`).then(res => {
+Effect('fetchLocations', (labelQuery) => {
+    httpClient.get(`/api/locations?label=${labelQuery}`).then(res => {
         Actions.setLocations(res.data);
     })
 });

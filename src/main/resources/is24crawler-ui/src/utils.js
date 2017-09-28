@@ -14,11 +14,11 @@ class Utils {
         return current;
     }
     addressToGoogleMapLink(address) {
-        const regionEnc = address.region.trim().split(' ').join('+');
-        const realRegionCommaIndex = regionEnc.indexOf(',');
+        const regionEnc = address.region.trim().split(' ').map(encodeURIComponent).join('+');
+        const realRegionCommaIndex = regionEnc.indexOf('%2C');
         const regionCommaIndex = realRegionCommaIndex !== -1 ? realRegionCommaIndex : regionEnc.length;
         const regionEncTrimmed = regionEnc.substring(0, regionCommaIndex);
-        const streetEnc = address.street.trim().split(' ').join('+');
+        const streetEnc = address.street.trim().split(' ').map(encodeURIComponent).join('+');
         // TODO: Move this to the backend
         if (address.street === "Die vollständige Adresse der Immobilie erhalten Sie vom Anbieter.") {
             return `https://www.google.de/maps/place/${regionEncTrimmed}`;
